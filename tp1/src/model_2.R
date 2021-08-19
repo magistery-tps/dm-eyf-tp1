@@ -45,14 +45,15 @@ show_groups <- function(data) data %>% group_by(target) %>% tally()
 feat        <- function(data) data %>% dplyr::select(-target)
 target      <- function(data) data %>% dplyr::select(target) %>% pull()
 
-xgboost_train <- function(data, max_depth=5, nround=70) {
+xgboost_train <- function(data, max_depth=5, nround=70, verbose=2, eta=0.1) {
   xgboost(
     data        = as.matrix(feat(data)),
     label       = target(data),
     max_depth   = max_depth,
     nround      = nround,
+    eta         = eta,
+    verbose     = verbose,
     nthread     = 24,
-    verbose     = 1,
     eval_metric = 'logloss',
     objective   = "binary:logistic"
   )
@@ -78,7 +79,7 @@ show_groups(train_set)
 show_groups(val_set)
 
 # Train, ROC & CM over validation...
-val_model <- xgboost_train(train_set, max_depth=1, nround=60)
+val_model <- xgboost_train(train_set, max_depth=1, nround=60, eta=0.2)
 val_pred <- xgboost_predict(val_model, feat(val_set))
 val_real <- target(val_set)
 
