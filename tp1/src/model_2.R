@@ -23,7 +23,7 @@ xgboost_predict <- function(model, features, threshold = 0.025) {
 }
 
 #
-# Genero el archivo para Kaggle
+# Generate Kaggle predictions file
 # URL: https://www.kaggle.com/c/uba-dmeyf2021-primera/
 #
 save_result <- function(test_set, test_pred, path="./K101_001.csv") {
@@ -64,7 +64,7 @@ xgboost_train <- function(data, max_depth=5, nround=70) {
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
-# Cargamos dev y test
+# Load dev y test
 setwd(this.path::this.dir())
 raw_dev_set <- loadcsv("../dataset/paquete_premium_202009.csv")
 test_set  <- loadcsv("../dataset/paquete_premium_202011.csv")
@@ -72,20 +72,20 @@ test_set  <- loadcsv("../dataset/paquete_premium_202011.csv")
 dev_set <- preprocessing(raw_dev_set)
 show_groups(dev_set)
 
-# Split en train y val
+# Split train-val
 c(train_set, val_set) %<-% train_test_split(dev_set, train_size=.9, shuffle=TRUE)
 show_groups(train_set)
 show_groups(val_set)
 
-# model <- xgboost_train(train_set, max_depth=5, nround=70)
-val_model <- xgboost_train(train_set, max_depth=2, nround=60)
-
+# Train, ROC & CM over validation...
+val_model <- xgboost_train(train_set, max_depth=1, nround=60)
 val_pred <- xgboost_predict(val_model, feat(val_set))
 val_real <- target(val_set)
 
 plot_cm(val_pred, val_real)
 plot_roc(val_pred, val_real)
 
+# Train over development set and sale predictions...
 dev_model <- xgboost_train(dev_set, max_depth=2, nround=60)
 test_pred <- xgboost_predict(dev_model, test_set %>% dplyr::select(-clase_ternaria))
 save_result(test_set, test_pred)
