@@ -112,13 +112,11 @@ scores %>% dplyr::arrange(dplyr::desc(F2Score))
 
 
 plot_cm(val_pred, val_real)
-
+aur(val_pred, val_real)
+plot_roc(val_pred, val_real)
 
 # xgb.plot.tree(model = val_model, trees = 1)
 xgb.plot.tree(model = val_model, trees = 18)
-aur(val_pred, val_real)
-
-plot_roc(val_pred, val_real)
 
 # Train over dev set and predict test set...
 dev_model <- xgboost_train(dev_set, max_depth=1, nround=34)
