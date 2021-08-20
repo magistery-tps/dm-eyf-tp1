@@ -2,7 +2,17 @@
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(this.path, MASS, stats, klaR, e1071, cluster, pracma, mvnormtest, xgboost)
+p_load(
+  this.path, 
+  MASS, 
+  stats, 
+  klaR, 
+  e1071, 
+  cluster, 
+  pracma, 
+  mvnormtest, 
+  xgboost, DiagrammeR
+)
 setwd(this.path::this.dir())
 source('./import.R')
 #

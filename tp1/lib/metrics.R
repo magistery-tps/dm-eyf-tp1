@@ -88,7 +88,7 @@ roc <- function(predictions, reality) {
 #
 aur <- function(predictions, reality) {
   r <- roc(predictions, reality)
-  r$AUR
+  r$AUC
 }
 
 #
