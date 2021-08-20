@@ -3,7 +3,7 @@ options(warn=-2)
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(this.path, data.table)
+p_load(this.path, data.table, DiagrammeR)
 setwd(this.path::this.dir())
 source('../lib/import.R')
 import('../lib/common-lib.R')
@@ -45,13 +45,14 @@ show_groups <- function(data) data %>% group_by(target) %>% tally()
 feat        <- function(data) data %>% dplyr::select(-target)
 target      <- function(data) data %>% dplyr::select(target) %>% pull()
 
-xgboost_train <- function(data, max_depth=5, nround=70, verbose=2, eta=0.1) {
+xgboost_train <- function(data, max_depth=5, nround=70, verbose=2, eta=0.1, alpha=0.1) {
   xgboost(
     data        = as.matrix(feat(data)),
     label       = target(data),
     max_depth   = max_depth,
     nround      = nround,
     eta         = eta,
+    alpha       = alpha,
     verbose     = verbose,
     nthread     = 24,
     eval_metric = 'logloss',
@@ -68,7 +69,7 @@ xgboost_train <- function(data, max_depth=5, nround=70, verbose=2, eta=0.1) {
 # Load dev y test
 setwd(this.path::this.dir())
 raw_dev_set <- loadcsv("../dataset/paquete_premium_202009.csv")
-test_set  <- loadcsv("../dataset/paquete_premium_202011.csv")
+test_set    <- loadcsv("../dataset/paquete_premium_202011.csv")
 
 dev_set <- preprocessing(raw_dev_set)
 show_groups(dev_set)
@@ -79,10 +80,12 @@ show_groups(train_set)
 show_groups(val_set)
 
 # Train, ROC & CM over validation...
-val_model <- xgboost_train(train_set, max_depth=1, nround=60, eta=0.2)
-val_pred <- xgboost_predict(val_model, feat(val_set))
-val_real <- target(val_set)
+val_model <- xgboost_train(train_set, max_depth=1, nround=60, alpha=0.2, eta=0.2)
+val_pred  <- xgboost_predict(val_model, feat(val_set))
+val_real  <- target(val_set)
 
+xgb.plot.tree(model = val_model, trees = 1)
+xgb.plot.tree(model = val_model, trees = 59)
 plot_cm(val_pred, val_real)
 plot_roc(val_pred, val_real)
 
