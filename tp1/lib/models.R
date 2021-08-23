@@ -11,12 +11,14 @@ p_load(
   cluster, 
   pracma, 
   mvnormtest, 
-  xgboost, DiagrammeR
+  xgboost, 
+  DiagrammeR
 )
 setwd(this.path::this.dir())
 source('./import.R')
 #
 import('./metrics.R')
+import('./xgboost_model.R')
 # ------------------------------------------------------------------------------
 #
 #

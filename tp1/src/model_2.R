@@ -13,8 +13,28 @@ import('../lib/common-lib.R')
 #
 #
 # ------------------------------------------------------------------------------
+# Variables
+# ------------------------------------------------------------------------------
+metric_cols <- c('fold', 'max_depth', 'nround', 'alpha', 'gamma', 'score')
+#
+#
+#
+#
+# ------------------------------------------------------------------------------
 # Functions
 # ------------------------------------------------------------------------------
+create_df <- function(columns) {
+  df <- data.frame(matrix(ncol = length(columns), nrow = 0))
+  colnames(df) <- columns
+  df
+}
+
+add <- function(df, row, columns) {
+  df <- rbind(df, row)
+  colnames(df) <- columns
+  df
+}
+
 xgboost_predict <- function(model, features, threshold = 0.025) {
   predictions <- predict(model, as.matrix(features))
   data.frame(target = predictions) %>% 
@@ -42,32 +62,63 @@ preprocessing <- function(dev_set) {
 }
 
 show_groups <- function(data) data %>% group_by(target) %>% tally()
-feat        <- function(data) data %>% dplyr::select(-target)
-target      <- function(data) data %>% dplyr::select(target) %>% pull()
 
-xgboost_train <- function(
-  data, 
-  nthread   = 24, 
-  max_depth = 5, 
-  nround    = 70, 
-  verbose   = 1,
-  eta       = 0.3, 
-  alpha     = 0
+train_and_metrics <- function(
+  train_set, 
+  val_set,
+  beta=2,
+  max_depth=2, 
+  nround=10,
+  alpha=0,
+  gamma=0
 ) {
-  xgboost(
-    data        = as.matrix(feat(data)),
-    label       = target(data),
-    max_depth   = max_depth,
-    nround      = nround,
-    eta         = eta,
-    alpha       = alpha,
-    verbose     = verbose,
-    nthread     = nthread,
-    eval_metric = 'logloss',
-    objective   = "binary:logistic"
-#    tree_method = 'gpu_hist',
-#    predict     = 'gpu_predictor',
+  model <- xgboost_train(
+    train_set,
+    max_depth = max_depth,
+    nround    = nround,
+    alpha     = alpha,
+    gamma     = gamma,
+    verbose   = 0
   )
+  val_pred  <- xgboost_predict(model, feat(val_set))
+  val_real  <- target(val_set)
+  score     <- fbeta_score(val_pred, val_real, beta=beta, show = F)
+  list(score, model)
+}
+
+grid_search_fn <- function(
+  beta, 
+  max_depth_values, 
+  nrounds_values,
+  alpha_values,
+  gamma_values
+) {
+  function(fold, train_set, val_set) {
+    metrics <-create_df(metric_cols)
+    for(nround in nrounds_values) {
+      for(max_depth in max_depth_values) {
+        for(alpha in alpha_values) {
+          for(gamma in gamma_values) {
+            c(score, model) %<-% train_and_metrics(
+              train_set, 
+              val_set, 
+              beta, 
+              max_depth, 
+              nround,
+              alpha,
+              gamma
+            )
+            curr_metrics <- c(fold, max_depth, nround, alpha, gamma, score)
+            metrics      <- add(metrics, curr_metrics, metric_cols)
+
+            print(curr_metrics)
+          }
+        }
+      }
+    }
+    metrics
+    print(metrics)
+  }
 }
 #
 #
@@ -84,42 +135,91 @@ test_set    <- loadcsv("../dataset/paquete_premium_202011.csv")
 dev_set <- preprocessing(raw_dev_set)
 show_groups(dev_set)
 
+
 # Split train-val...
 c(train_set, val_set) %<-% train_test_split(dev_set, train_size=.7, shuffle=TRUE)
 show_groups(train_set)
 show_groups(val_set)
+c(score, model) %<-% train_and_metrics(train_set, val_set)
+
+# ------------------------------------------------------------------------------
+# Hiperparametros:
+# ------------------------------------------------------------------------------
+k                = 10
+beta             = 2
+max_depth_values = seq(2, 6, 2)
+nrounds_values   = seq(10, 40, 10)
+alpha_values     = seq(0, 20, 5)
+gamma_values     = seq(0, 20, 5)
+# ------------------------------------------------------------------------------
 
 
-# Train over train set and predict val set...
-beta             <- 2
-max_depth_values <- seq(1)
-nrounds_values   <- seq(30, 40)
-eta              <- 0.3
-scores           <- data.frame()
+# Grid search + crosss validation...
+metrics <- cv_callback(
+  dev_set, 
+  grid_search_fn(
+    beta,
+    max_depth_values,
+    nrounds_values,
+    alpha_values,
+    gamma_values
+  ),
+  k=k
+)
 
-for(nround in nrounds_values) {
-  for(max_depth in max_depth_values) {
-    val_model <- xgboost_train(train_set, max_depth=max_depth, nround=nround, verbose = 0, eta=eta)
-    val_pred  <- xgboost_predict(val_model, feat(val_set))
-    val_real  <- target(val_set)
-    score     <- fbeta_score(val_pred, val_real, beta=beta, show = F)
-    scores    <- rbind(scores, c(max_depth, nround, score)) 
-    print(paste('max_depth:', max_depth, 'nround:', nround, 'score:', score))
-  }
-}
-colnames(scores) <- c('Max Depth', 'N Round', 'F2Score')
-scores %>% dplyr::arrange(dplyr::desc(F2Score))
+last_metrics <- metrics %>%
+  group_by(across(all_of(metric_cols[2:5]))) %>% 
+  summarise_at(vars(score), list(mean_score = mean)) %>%
+  arrange(desc(mean_score))
+
+View(last_metrics)
+fwrite(last_metrics, file='metrics.csv', sep="," )
 
 
-plot_cm(val_pred, val_real)
-aur(val_pred, val_real)
-plot_roc(val_pred, val_real)
+# Kaggle Score: 9.36
+max_depth = 1
+nround    = 34
+alpha     = 0
+gamma     = 0
 
-# xgb.plot.tree(model = val_model, trees = 1)
-xgb.plot.tree(model = val_model, trees = 18)
+# Kaggle Score: 8.18
+max_depth = 4
+nround    = 22
+alpha     = 0
+gamma     = 5
+
+
+# Kaggle Score: 11.01972
+max_depth = 4
+nround    = 20 # 40
+alpha     = 5
+gamma     = 0.1
+
+
+cv_result <- xgboost_cv(
+  dev_set, 
+  max_depth   = max_depth,
+  nround      = nround,
+  alpha       = alpha,
+  gamma       = gamma,
+  eval_metric = 'auc'
+)
+plot_xgboost_cv_train_vs_val(cv_result)
 
 # Train over dev set and predict test set...
-dev_model <- xgboost_train(dev_set, max_depth=1, nround=34)
+dev_model <- xgboost_train(
+  dev_set, 
+  max_depth = max_depth,
+  nround    = nround,
+  alpha     = alpha,
+  gamma     = gamma
+)
+
+
+
+# xgb.plot.tree(model = val_model, trees = 1)
+xgb.plot.tree(model = dev_model, trees = nround-1)
+
 test_pred <- xgboost_predict(dev_model, test_set %>% dplyr::select(-clase_ternaria))
 
 # Save prediction...
