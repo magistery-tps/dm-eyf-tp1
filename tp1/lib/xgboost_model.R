@@ -18,59 +18,41 @@ setwd(this.path::this.dir())
 feat        <- function(data) data %>% dplyr::select(-target)
 target      <- function(data) data %>% dplyr::select(target) %>% pull()
 
-xgboost_train <- function(
-  data, 
-  nthread     = 24, 
-  max_depth   = 5, 
-  nround      = 70, 
-  verbose     = 1,
-  eta         = 0.3, 
-  alpha       = 0,
-  gamma       = 0,
-  eval_metric = 'logloss',
-  objective   = "binary:logistic"
-) {
+xgb_default_params <- function() {
+  list(
+    nthread     = 24, 
+    max_depth   = 5,
+    verbose     = 1,
+    eta         = 0.3, 
+    alpha       = 0,
+    gamma       = 0,
+    eval_metric = 'logloss',
+    objective   = "binary:logistic"
+  )
+}
+
+xgboost_train <- function(data, params=xgb_default_params(), nrounds=10) {
   xgboost(
-    data        = as.matrix(feat(data)),
-    label       = target(data),
-    max_depth   = max_depth,
-    nround      = nround,
-    eta         = eta,
-    alpha       = alpha,
-    gamma       = gamma,
-    verbose     = verbose,
-    nthread     = nthread,
-    eval_metric = eval_metric,
-    objective   = objective
+    data    = as.matrix(feat(data)),
+    label   = target(data),
+    params  = params,
+    nrounds = nrounds
   )
 }
 
 
 xgboost_cv <- function(
-  data, 
-  nthread     = 24, 
-  max_depth   = 5, 
-  nround      = 20, 
-  verbose     = 1,
-  eta         = 0.3, 
-  alpha       = 0,
-  gamma       = 0,
-  nfold       = 10,
-  eval_metric = 'logloss',
-  objective   = "binary:logistic"
+  data,
+  params  = xgb_default_params(), 
+  nfold   = 10, 
+  nrounds = 10
 ) {
   xgb.cv(
-    data        = as.matrix(feat(data)),
-    label       = target(data),
-    max_depth   = max_depth,
-    nround      = nround,
-    eta         = eta,
-    alpha       = alpha,
-    gamma.      = gamma,
-    verbose     = verbose,
-    eval_metric = eval_metric,
-    nfold       = nfold,
-    objective   = objective
+    data    = as.matrix(feat(data)),
+    label   = target(data),
+    nfold   = nfold,
+    nrounds = nrounds,
+    params  = params
   )
 }
 
@@ -124,10 +106,11 @@ f_beta_score_fn <- function(threshold = 0.025, beta = 2) {
     y_pred <- data.frame(val = preds) %>% 
       dplyr::mutate(val = as.numeric(val > threshold)) %>%
       pull()
-    
-    score <- fbeta_score(y_pred, y_true, beta = beta)
+        
+    score <- fbeta_score(y_pred, y_true, beta = beta, show = F)
     score <- if(is.na(score)) 0 else score
     
     list(metric = "f_beta_score", value = score)
   }
 }
+
