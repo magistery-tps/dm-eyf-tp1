@@ -238,7 +238,7 @@ plot_xgboost_cv_train_vs_val(model)
 # Kaggle Score: 10.71559
 params <- xgb_default_params()
 params$max_depth   <- 6
-nrounds            <- 18 #30
+nrounds            <- 30 #30
 params$alpha       <- 15
 params$gamma       <- 0
 params$eval_metric <- 'auc'
@@ -249,9 +249,24 @@ plot_xgboost_cv_train_vs_val(model)
 #
 #
 #
+# Kaggle Score: 11.96129 *
+params <- xgb_default_params()
+params$max_depth   <- 2
+nrounds            <- 70 #30
+params$alpha       <- 5
+params$gamma       <- 1
+params$eval_metric <- 'auc'
+nfold              <- 10
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
+#
+#
+#
+#
 # Train over dev set and predict test set...
-dev_model <- xgboost_train(dev_set, params, nround)
+dev_model <- xgboost_train(dev_set, params, nrounds)
 test_pred <- xgboost_predict(dev_model, test_set %>% dplyr::select(-clase_ternaria))
-xgb.plot.tree(model=dev_model, trees = nround-1)
+xgb.plot.tree(model=dev_model, trees = nrounds-1)
 # Save prediction...
 save_result(test_set, test_pred)
