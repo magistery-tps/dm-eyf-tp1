@@ -15,7 +15,15 @@ import('../lib/common-lib.R')
 # ------------------------------------------------------------------------------
 # Variables
 # ------------------------------------------------------------------------------
-metric_cols <- c('fold', 'max_depth', 'nrounds', 'alpha', 'gamma', 'score')
+metric_cols <- c(
+  'fold', 
+  'max_depth', 
+  'nrounds', 
+  'alpha', 
+  'gamma', 
+  'train_f2_score', 
+  'val_f2_score'
+)
 #
 #
 #
@@ -71,11 +79,20 @@ train_and_metrics <- function(
   nrounds = 10
 ) {
   print(params)
+
   model <- xgboost_train(train_set, params, nrounds)
+
+  # Evaluate metric on validation set...
   val_pred  <- xgboost_predict(model, feat(val_set))
   val_real  <- target(val_set)
-  score     <- fbeta_score(val_pred, val_real, beta=beta, show = F)
-  list(score, model)
+  val_score <- fbeta_score(val_pred, val_real, beta=beta, show = F)
+  
+  # Evaluate metric on training set...
+  train_pred  <- xgboost_predict(model, feat(train_set))
+  train_real  <- target(train_set)
+  train_score <- fbeta_score(train_pred, train_real, beta=beta, show = F)
+  
+  list(train_score, val_score, model)
 }
 
 grid_search_fn <- function(
@@ -97,7 +114,7 @@ grid_search_fn <- function(
             params$alpha     <- alpha       
             params$gamma     <- gamma
 
-            c(score, model) %<-% train_and_metrics(
+            c(train_score, val_score, model) %<-% train_and_metrics(
               train_set, 
               val_set, 
               beta, 
@@ -105,7 +122,7 @@ grid_search_fn <- function(
               nrounds
             )
 
-            curr_metrics <- c(fold, max_depth, nrounds, alpha, gamma, score)
+            curr_metrics <- c(fold, max_depth, nrounds, alpha, gamma, train_score, val_score)
             metrics      <- add(metrics, curr_metrics, metric_cols)
 
             print(curr_metrics)
@@ -134,11 +151,11 @@ show_groups(dev_set)
 
 
 # Split train-val...
-# c(train_set, val_set) %<-% train_test_split(dev_set, train_size=.7, shuffle=TRUE)
-# show_groups(train_set)
-# show_groups(val_set)
-# c(score, model) %<-% train_and_metrics(train_set, val_set)
-# score
+c(train_set, val_set) %<-% train_test_split(dev_set, train_size=.7, shuffle=TRUE)
+show_groups(train_set)
+show_groups(val_set)
+c(train_score, val_score, model) %<-% train_and_metrics(train_set, val_set)
+c(train_score, val_score)
 #
 #
 #
@@ -149,10 +166,17 @@ show_groups(dev_set)
 # Hiperparametros:
 k                = 10
 beta             = 2
-max_depth_values = seq(2, 6, 2)
+max_depth_values = seq(1, 3, 1)
 nrounds_values   = seq(10, 40, 10)
 alpha_values     = seq(0, 20, 5)
 gamma_values     = seq(0, 20, 5)
+#
+# k                = 2
+# beta             = 2
+# max_depth_values = 2
+# nrounds_values   = 10
+# alpha_values     = 5
+# gamma_values     = 5
 #
 metrics <- cv_callback(
   dev_set, 
@@ -168,12 +192,30 @@ metrics <- cv_callback(
 #
 # Save metrics:
 last_metrics <- metrics %>%
+  replace(is.na(.), 0) %>%
   group_by(across(all_of(metric_cols[2:5]))) %>% 
-  summarise_at(vars(score), list(cv_mean_f2_score = mean)) %>%
-  arrange(desc(cv_mean_f2_score))
+  summarise_at(vars(train_f2_score, val_f2_score), mean, na.rm = TRUE) %>%
+  mutate(diff_percent = scale(train_f2_score - val_f2_score, center = F)) %>%
+  arrange(desc(val_f2_score))
 
+# fwrite(last_metrics, file='xgboost_cv_metrics.csv', sep="," )
+
+last_metrics <- fread(file='xgboost_cv_metrics.csv', sep="," )
 View(last_metrics)
-fwrite(last_metrics, file='xgboost_cv_metrics.csv', sep="," )
+
+gplot_hist(last_metrics$diff_percent, binwidth=0.05)
+
+box_plot(last_metrics$diff_percent)
+box <- box_plot(last_metrics$diff_percent)
+box$stats
+
+selected <- last_metrics %>% filter(
+  diff_percent >= (box$stats[3] - (box$stats[3]*0.05)),
+  diff_percent <= (box$stats[3] + (box$stats[3]*0.05))
+)
+nrow(selected)
+View(selected)
+selected[1]
 #
 #
 #
@@ -238,7 +280,7 @@ plot_xgboost_cv_train_vs_val(model)
 # Kaggle Score: 10.71559
 params <- xgb_default_params()
 params$max_depth   <- 6
-nrounds            <- 30 #30
+nrounds            <- 20 #30
 params$alpha       <- 15
 params$gamma       <- 0
 params$eval_metric <- 'auc'
@@ -255,6 +297,20 @@ params$max_depth   <- 2
 nrounds            <- 70 #30
 params$alpha       <- 5
 params$gamma       <- 1
+params$eval_metric <- 'auc'
+nfold              <- 10
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
+#
+#
+#
+# Kaggle Score: 10.98223 (AUC Train/Val con el menor overfitting, hasta el momento).
+params <- xgb_default_params()
+params$max_depth   <- 3
+nrounds            <- 30
+params$alpha       <- 10
+params$gamma       <- 15
 params$eval_metric <- 'auc'
 nfold              <- 10
 

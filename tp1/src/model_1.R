@@ -30,7 +30,7 @@ prediccion  <- predict(modelo, dapply , type = "prob") #aplico el modelo
 
 entrega <- dapply %>%
   mutate(prob_baja2 = prediccion[, "BAJA+2"]) %>%
-  mutate(Predicted  = as.numeric(prob_baja2 > 0.025)) %>%
+  mutate(Predicted  = as.numeric(prob_baja2 > 0.025)) %>% 
   select(numero_de_cliente, Predicted)
   
 #genero el archivo para Kaggle
