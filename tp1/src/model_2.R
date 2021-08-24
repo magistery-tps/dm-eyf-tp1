@@ -134,11 +134,11 @@ show_groups(dev_set)
 
 
 # Split train-val...
-c(train_set, val_set) %<-% train_test_split(dev_set, train_size=.7, shuffle=TRUE)
-show_groups(train_set)
-show_groups(val_set)
-c(score, model) %<-% train_and_metrics(train_set, val_set)
-score
+# c(train_set, val_set) %<-% train_test_split(dev_set, train_size=.7, shuffle=TRUE)
+# show_groups(train_set)
+# show_groups(val_set)
+# c(score, model) %<-% train_and_metrics(train_set, val_set)
+# score
 #
 #
 #
@@ -184,55 +184,74 @@ fwrite(last_metrics, file='xgboost_cv_metrics.csv', sep="," )
 # Kaggle Score: 9.36
 params <- xgb_default_params()
 params$max_depth   <- 1
-nround             <- 34
+nrounds            <- 34
 params$eval_metric <- 'auc'
 nfold              <- 10
-plot_xgboost_cv_train_vs_val(xgboost_cv(dev_set, params, nfold=nfold, nround=nround))
-xgb.plot.tree(model = dev_set, trees = nround-1)
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
 #
 #
 #
 # Kaggle Score: 8.18
 params <- xgb_default_params()
 params$max_depth   <- 4
-nround             <- 22
+nrounds            <- 22
 params$alpha       <- 0
 params$gamma       <- 5
 params$eval_metric <- 'auc'
 nfold              <- 10
-plot_xgboost_cv_train_vs_val(xgboost_cv(dev_set, params, nfold=nfold, nround=nround))
-xgb.plot.tree(model = dev_set, trees = nround-1)
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
 #
 #
 #
 # Kaggle Score: 11.01972
 params <- xgb_default_params()
 params$max_depth   <- 4
-nround             <- 22 # 40
+nrounds            <- 22 # 40
 params$alpha       <- 5
 params$gamma       <- 0.1
 params$eval_metric <- 'auc'
 nfold              <- 10
-plot_xgboost_cv_train_vs_val(xgboost_cv(dev_set, params, nfold=nfold, nround=nround))
-xgb.plot.tree(model = dev_set, trees = nround-1)
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
 #
 #
 #
 # Kaggle Score: 11.54467
 params <- xgb_default_params()
 params$max_depth   <- 6
-nround             <- 22 #30
+nrounds            <- 22 #30
 params$alpha       <- 15
 params$gamma       <- 0
 params$eval_metric <- 'auc'
 nfold              <- 10
-plot_xgboost_cv_train_vs_val(xgboost_cv(dev_set, params, nfold=nfold, nround=nround))
-xgb.plot.tree(model = dev_set, trees = nround-1)
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
+#
+#
+#
+# Kaggle Score: 10.71559
+params <- xgb_default_params()
+params$max_depth   <- 6
+nrounds            <- 18 #30
+params$alpha       <- 15
+params$gamma       <- 0
+params$eval_metric <- 'auc'
+nfold              <- 10
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
 #
 #
 #
 # Train over dev set and predict test set...
 dev_model <- xgboost_train(dev_set, params, nround)
 test_pred <- xgboost_predict(dev_model, test_set %>% dplyr::select(-clase_ternaria))
+xgb.plot.tree(model=dev_model, trees = nround-1)
 # Save prediction...
 save_result(test_set, test_pred)
