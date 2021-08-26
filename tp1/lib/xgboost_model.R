@@ -22,21 +22,27 @@ xgb_default_params <- function() {
   list(
     nthread     = 24, 
     max_depth   = 5,
-    verbose     = 1,
+    verbose     = 0,
     eta         = 0.3, 
     alpha       = 0,
     gamma       = 0,
     eval_metric = 'logloss',
-    objective   = "binary:logistic"
+    objective   = "binary:logistic"# ,
+    #gpu_id      = 0,
+    #tree_method = 'gpu_hist'
   )
 }
 
 xgboost_train <- function(data, params=xgb_default_params(), nrounds=10) {
+  verbose <- params$verbose
+  params$verbose <- NULL
+
   xgboost(
     data    = as.matrix(feat(data)),
     label   = target(data),
     params  = params,
-    nrounds = nrounds
+    nrounds = nrounds,
+    verbose = verbose
   )
 }
 
@@ -106,7 +112,7 @@ f_beta_score_fn <- function(threshold = 0.025, beta = 2) {
     y_pred <- data.frame(val = preds) %>% 
       dplyr::mutate(val = as.numeric(val > threshold)) %>%
       pull()
-        
+    
     score <- fbeta_score(y_pred, y_true, beta = beta, show = F)
     score <- if(is.na(score)) 0 else score
     

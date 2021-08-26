@@ -86,7 +86,7 @@ roc <- function(predictions, reality) {
 #
 # Calcula la curva ROC
 #
-aur <- function(predictions, reality) {
+auc <- function(predictions, reality) {
   r <- roc(predictions, reality)
   r$AUC
 }
@@ -99,9 +99,19 @@ plot_roc <- function(predictions, reality) {
 }
 
 #
+# Devuelve el numero de negativos verdaderos
+#
+tn <- function(predictions, reality) table(predictions, reality)[1, 1]
+
+#
 # Devuelve el numero de falsos negativos
 #
 fn <- function(predictions, reality) table(predictions, reality)[1, 2]
+
+#
+# Devuelve el numero de positivos verdaderos
+#
+tp <- function(predictions, reality) table(predictions, reality)[2, 2]
 
 #
 # Devuelve el numero de falsos positivos
@@ -224,7 +234,28 @@ plot_dendrogram <- function(hc_result, k) {
 }
 
 
+stratify_metrics <- function(train_set, val_set, target_col='target') {
+  train_pos <- train_set %>% dplyr::select(target_col)
+  val_pos   <- val_set   %>% dplyr::select(target_col)         
+  print(paste(
+    'Positives - Train: ',
+    percent(sum(train_pos[train_pos == 1]), nrow(train_set)), 
+    '% - Val: ',
+    percent(sum(val_pos[val_pos == 1]), nrow(val_set)),
+    '%',
+    sep=''
+  ))
 
+  total <- nrow(train_set) + nrow(val_set)
+  print(paste(
+    'Total     - Train: ', 
+    percent(nrow(train_set), total),
+    '% - Val: ',
+    percent(nrow(val_set), total), 
+    '%',
+    sep=''
+  ))
+}
 
 
 

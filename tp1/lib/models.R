@@ -12,7 +12,8 @@ p_load(
   pracma, 
   mvnormtest, 
   xgboost, 
-  DiagrammeR
+  DiagrammeR,
+  lightgbm
 )
 setwd(this.path::this.dir())
 source('./import.R')

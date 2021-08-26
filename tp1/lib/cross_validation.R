@@ -10,6 +10,8 @@ p_load(
   stringr
 )
 setwd(this.path::this.dir())
+#
+import('./metrics.R')
 # ------------------------------------------------------------------------------
 #
 #
@@ -24,6 +26,8 @@ index_of <- function(array, values) {
   }
   results
 }
+
+percent <- function(value, total) round((value/total)*100, 2)
 
 #
 # https://stackoverflow.com/questions/10399792/stratified-10-fold-cross-validation
@@ -44,14 +48,15 @@ cv_callback <- function(dataset, callback_fn, target='target', k=10) {
     # Set element indexes
     val_fold_indexes   <- index_of(folds, val_fold_num)
     train_fold_indexes <- index_of(folds, train_fold_nums)
-    print(paste('Val Index len:', length(val_fold_indexes), '- Train Index len:', length(train_fold_indexes)))
+    # print(paste('Val Index len:', length(val_fold_indexes), '- Train Index len:', length(train_fold_indexes)))
 
     # Sets
     val_set   <- dataset[val_fold_indexes,]
     train_set <- dataset[train_fold_indexes,]
-    print(paste('Val Size:', nrow(val_set), '- Train Size:', nrow(train_set)))
+    
+    stratify_metrics(val_set, train_set)
 
-    print(paste('Callback', class(callback_fn)))
+    # print(paste('Callback', class(callback_fn)))
     result <- callback_fn(index, train_set, val_set)
 
     results <- if(is.null(results)) result else union_all(results, result)
