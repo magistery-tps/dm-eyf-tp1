@@ -204,15 +204,17 @@ nfold              <- 10
 model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
 plot_xgboost_cv_train_vs_val(model)
 
-
-# Kaggle Score: Muy similar a la prueba anterior pero con AUC mas alto y parejo.
+# Kaggle Score: 11.39052
 params <- xgb_default_params()
-params$max_depth   <- 3
-nrounds            <- 35 
+params$max_depth   <- 2
+nrounds            <- 60 
 params$alpha       <- 5
-params$gamma       <- 10
+params$gamma       <- 5
 params$eval_metric <- 'auc'
 nfold              <- 10
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
 #
 #
 #
@@ -221,7 +223,7 @@ nfold              <- 10
 dev_model <- xgboost_train(dev_set, params, nrounds)
 test_pred <- xgboost_predict(
   dev_model, 
-  test_set %>% dplyr::select(-c(clase_ternaria))
+  test_set %>% dplyr::select(-c(excluded_columns, clase_ternaria))
 )
 
 xgb.plot.tree(model=dev_model, trees = 10)
