@@ -52,10 +52,10 @@ params = list(
 
 dev_cv_model <- lgb.cv(
   params          = params,
-  device          = "gpu",
-  gpu_platform_id = 0,
-  gpu_device_id   = 0,
-  gpu_use_dp      = TRUE,
+#  device          = "gpu",
+#  gpu_platform_id = 0,
+#  gpu_device_id   = 0,
+#  gpu_use_dp      = TRUE,
   nthread         = 24,
   data            = ds,
   nrounds         = 120,

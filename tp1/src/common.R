@@ -61,7 +61,7 @@ preprocessing <- function(dev_set, excludes=c()) {
 
 show_groups <- function(data) data %>% group_by(target) %>% tally()
 
-train_and_metrics <- function(
+train_model <- function(
   train_set,
   val_set,
   beta    = 2,
@@ -80,15 +80,19 @@ train_and_metrics <- function(
   train_pred  <- xgboost_predict(model, feat(train_set))
   train_real  <- target(train_set)
 
+  generate_metrics(train_pred, train_real, val_pred, val_real, beta)
+}
+
+generate_metrics <- function(train_pred, train_real, val_pred, val_real, beta) {
   val_score   <- fbeta_score(val_pred, val_real, beta=beta, show = F)
   train_score <- fbeta_score(train_pred, train_real, beta=beta, show = F)
-
+  
   train_gain <- gain_score(train_pred, train_real)
   val_gain   <- gain_score(val_pred, val_real)
-
+  
   train_auc <- auc(train_pred, train_real)
   val_auc   <- auc(val_pred, val_real)
-
+  
   list(
     'train_f2_score' = train_score,
     'val_f2_score'   = train_score, 
@@ -125,7 +129,7 @@ grid_search_fn <- function(
             params$gamma     <- gamma
             params$verbose   <- 0
             
-            curr_metrics <- train_and_metrics(train_set, val_set, beta, params, nrounds)
+            curr_metrics <- train_model(train_set, val_set, beta, params, nrounds)
 
             metrics_row <- c(
               list(
@@ -157,6 +161,10 @@ mean_by_fold_and_params <- function(metrics) {
     arrange(gain_diff)
 }
 
+gain <- function(true_positives, false_positives) {
+  currency((48750 * true_positives) - (1250 * false_positives))
+}
+
 gain_score <- function(predictions, reality) {
-  (48750 * tp(predictions, reality)) - (1250 * fp(predictions, reality))
+  gain(tp(predictions, reality), fp(predictions, reality))
 }
