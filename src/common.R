@@ -32,8 +32,7 @@ xgboost_predict <- function(model, features, threshold = 0.025) {
 
 
 light_gbm_predict <- function(model, features, threshold = 0.025) {
-  features_sparse  = Matrix(as.matrix(features), sparse=TRUE)
-  predictions <- predict(model, features_sparse)
+  predictions <- predict(model, features)
   data.frame(target = predictions) %>% 
     dplyr::mutate(target = as.numeric(target > threshold)) %>%
     pull()
@@ -55,7 +54,7 @@ preprocessing <- function(dev_set, excludes=c()) {
   dev_set %>%
     dplyr::rename(target = clase_ternaria) %>%
     dplyr::mutate(target = as.numeric(as.factor(target))-1) %>%
-    dplyr::mutate(target = ifelse(target==2, 0, ifelse(target==1, 1, 0))) %>%
+    dplyr::mutate(target = ifelse(target==2, 0, 1)) %>%
     dplyr::select(-excludes)
 }
 
@@ -66,18 +65,19 @@ train_model <- function(
   val_set,
   beta    = 2,
   params  = xgb_default_params(), 
-  nrounds = 10
+  nrounds = 10,
+  threshold = 0.025
 ) {
   # print(params)
   
   model <- xgboost_train(train_set, params, nrounds)
   
   # Evaluate metric on validation set...
-  val_pred  <- xgboost_predict(model, feat(val_set))
+  val_pred  <- xgboost_predict(model, feat(val_set), threshold = threshold)
   val_real  <- target(val_set)
   
   # Evaluate metric on training set...
-  train_pred  <- xgboost_predict(model, feat(train_set))
+  train_pred  <- xgboost_predict(model, feat(train_set), threshold = threshold)
   train_real  <- target(train_set)
 
   generate_metrics(train_pred, train_real, val_pred, val_real, beta)
@@ -95,7 +95,7 @@ generate_metrics <- function(train_pred, train_real, val_pred, val_real, beta) {
   
   list(
     'train_f2_score' = train_score,
-    'val_f2_score'   = train_score, 
+    'val_f2_score'   = val_score,
     'f2_score_diff'  = abs(train_score - val_score),
     'train_auc'      = train_auc, 
     'val_auc'        = val_auc, 
@@ -111,7 +111,8 @@ generate_metrics <- function(train_pred, train_real, val_pred, val_real, beta) {
 }
 
 grid_search_fn <- function(
-  beta, 
+  beta,
+  eta_values,
   max_depth_values, 
   nrounds_values,
   alpha_values,
@@ -123,27 +124,31 @@ grid_search_fn <- function(
       for(max_depth in max_depth_values) {
         for(alpha in alpha_values) {
           for(gamma in gamma_values) {
-            params <- xgb_default_params()
-            params$max_depth <- max_depth
-            params$alpha     <- alpha       
-            params$gamma     <- gamma
-            params$verbose   <- 0
-            
-            curr_metrics <- train_model(train_set, val_set, beta, params, nrounds)
-
-            metrics_row <- c(
-              list(
-                'fold'      = fold,
-                'max_depth' = max_depth, 
-                'nrounds'   = nrounds, 
-                'alpha'     = alpha, 
-                'gamma'     = gamma
-              ),
-              curr_metrics
-            )
-            print(data.frame(metrics_row))
-            
-            metrics <- if(is.null(metrics)) data.frame(metrics_row) else rbind(metrics, metrics_row)
+            for(eta in eta_values) {
+              params <- xgb_default_params()
+              params$max_depth <- max_depth
+              params$alpha     <- alpha       
+              params$gamma     <- gamma
+              params$eta       <- eta
+              params$verbose   <- 0
+              
+              curr_metrics <- train_model(train_set, val_set, beta, params, nrounds)
+  
+              metrics_row <- c(
+                list(
+                  'fold'      = fold,
+                  'max_depth' = max_depth, 
+                  'nrounds'   = nrounds, 
+                  'alpha'     = alpha, 
+                  'gamma'     = gamma, 
+                  'eta'       = eta
+                ),
+                curr_metrics
+              )
+              print(data.frame(metrics_row))
+              
+              metrics <- if(is.null(metrics)) data.frame(metrics_row) else rbind(metrics, metrics_row)
+            }
           }
         }
       }
@@ -156,8 +161,8 @@ grid_search_fn <- function(
 mean_by_fold_and_params <- function(metrics) {
   metrics %>%
     replace(is.na(.), 0) %>%
-    group_by(across(all_of(colnames(metrics)[2:5]))) %>% 
-    summarise_at(vars(colnames(metrics)[6:14]), mean, na.rm = TRUE) %>%
+    group_by(across(all_of(colnames(metrics)[2:6]))) %>% 
+    summarise_at(vars(colnames(metrics)[7:15]), mean, na.rm = TRUE) %>%
     arrange(gain_diff)
 }
 

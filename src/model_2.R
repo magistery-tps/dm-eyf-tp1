@@ -32,10 +32,9 @@ stratify_metrics(train_set, val_set)
 
 params <- xgb_default_params()
 params$max_depth   <- 2
-nrounds            <- 20
-params$alpha       <- 15
+nrounds            <- 60
 params$eval_metric <- 'auc'
-params$gamma       <- 0
+params$verbose     <- TRUE
 
 metrics <- train_model(train_set, val_set, params = params, nrounds = nrounds)
 data.frame(metrics)
@@ -47,17 +46,19 @@ data.frame(metrics)
 # ------------------------------------------------------------------------------
 #
 # Hiperparametros:
-k                = 10
-beta             = 2
-max_depth_values = seq(2, 4, 1)
-nrounds_values   = seq(30, 40, 10)
-alpha_values     = seq(0, 10, 5)
-gamma_values     = seq(0, 10, 5)
+k                <- 5
+beta             <- 2
+eta_values       <- c(0.3, 0.5, 0.7, 1)
+max_depth_values <- seq(2, 3, 1)
+nrounds_values   <- seq(20, 40, 10)
+alpha_values     <- seq(0, 10, 5)
+gamma_values     <- seq(0, 10, 5)
 #
 metrics <- cv_callback(
   dev_set, 
   grid_search_fn(
     beta,
+    eta_values,
     max_depth_values,
     nrounds_values,
     alpha_values,
@@ -68,37 +69,36 @@ metrics <- cv_callback(
 #
 fwrite(
   metrics,
-  file='xgboost_cv_fold_metrics.csv',
+  file='xgboost_cv_fold_metrics2.csv',
   sep=","
 )
 
 fwrite(
   mean_by_fold_and_params(metrics), 
-  file='xgboost_cv_mean_metrics.csv', 
+  file='xgboost_cv_mean_metrics2.csv', 
   sep=","
 )
 
 mean_metrics <- fread(file='xgboost_cv_mean_metrics.csv', sep="," )
 
-mean_metrics <- mean_metrics %>% mutate(
+mean_metrics <- mean_metrics %>% dplyr::mutate(
   train_gain     = currency(train_gain),
   val_gain       = currency(val_gain), 
   gain_diff      = currency(gain_diff)
-) %>% arragen(gain_diff)
-
+) %>% dplyr::arrange(gain_diff)
 
 View(mean_metrics)
 
-gplot_hist(mean_metrics$gain_diff, binwidth=0.05)
+gplot_hist(mean_metrics$f2_score_diff, binwidth=0.01)
 
-box_plot(mean_metrics$gain_diff)
-box <- box_plot(mean_metrics$gain_diff)
+box_plot(mean_metrics$f2_score_diff)
+box <- box_plot(mean_metrics$f2_score_diff)
 box$stats
 
 selected <- mean_metrics %>% filter(
-  gain_diff >= (box$stats[3] - (box$stats[3]*0.05)),
-  gain_diff <= (box$stats[3] + (box$stats[3]*0.05))
-) %>% arrange(gain_diff)
+  f2_score_diff >= (box$stats[3] - (box$stats[3]*0.05)),
+  f2_score_diff <= (box$stats[3] + (box$stats[3]*0.05))
+) %>% arrange(f2_score_diff)
 
 nrow(selected)
 # View(selected)
@@ -207,11 +207,41 @@ plot_xgboost_cv_train_vs_val(model)
 # Kaggle Score: 11.39052
 params <- xgb_default_params()
 params$max_depth   <- 2
-nrounds            <- 60 
+nrounds            <- 60
 params$alpha       <- 5
 params$gamma       <- 5
 params$eval_metric <- 'auc'
 nfold              <- 10
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
+
+
+# Clase baja2+1 vs continua:
+params <- xgb_default_params()
+params$max_depth   <- 2
+nrounds            <- 40
+params$alpha       <- 10
+params$gamma       <- 0
+params$eta         <- 0.3
+params$eval_metric <- 'auc'
+nfold              <- 5
+params$verbose     <- T
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
+
+
+# Clase baja2+1 vs continua: 11.03639
+params <- xgb_default_params()
+params$max_depth   <- 2
+nrounds            <- 30
+params$alpha       <- 5
+params$gamma       <- 10
+params$eta         <- 0.5
+params$eval_metric <- 'auc'
+nfold              <- 5
+params$verbose     <- T
 
 model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
 plot_xgboost_cv_train_vs_val(model)
@@ -226,8 +256,9 @@ test_pred <- xgboost_predict(
   test_set %>% dplyr::select(-c(excluded_columns, clase_ternaria))
 )
 
-xgb.plot.tree(model=dev_model, trees = 10)
+xgb.plot.tree(model=dev_model, trees = nrounds-1)
 
 # Save prediction...
 setwd(this.path::this.dir())
 save_result(test_set, test_pred)
+  

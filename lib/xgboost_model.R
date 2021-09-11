@@ -23,7 +23,7 @@ xgb_default_params <- function() {
     nthread     = 24, 
     max_depth   = 5,
     verbose     = 0,
-    eta         = 0.3, 
+    eta         = 1, 
     alpha       = 0,
     gamma       = 0,
     eval_metric = 'logloss',
