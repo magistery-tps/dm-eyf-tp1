@@ -1,0 +1,16 @@
+name: dm-eyf-tp1
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - jupyterlab
+  - matplotlib
+  - seaborn
+  - numpy
+  - pandas
+  - scikit-learn
+  - lightgbm
+  - graphviz
+  - python-graphviz
+  - pip
+  - pip:

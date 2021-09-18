@@ -245,6 +245,22 @@ params$verbose     <- T
 
 model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
 plot_xgboost_cv_train_vs_val(model)
+
+
+#
+#
+#
+# Kaggle Score: 
+params <- xgb_default_params()
+params$max_depth   <- 2
+nrounds            <- 7
+params$alpha       <- 9
+params$gamma       <- 14
+params$eval_metric <- 'auc'
+nfold              <- 10
+
+model <- xgboost_cv(dev_set, params, nfold=nfold, nrounds=nrounds)
+plot_xgboost_cv_train_vs_val(model)
 #
 #
 #
