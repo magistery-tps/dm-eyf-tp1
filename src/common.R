@@ -15,7 +15,12 @@ import('../lib/common-lib.R')
 # ------------------------------------------------------------------------------
 # Variables
 # ------------------------------------------------------------------------------
-excluded_columns = c('numero_de_cliente', 'foto_mes')
+excluded_columns = c(
+  'numero_de_cliente', 
+  'foto_mes', 
+  'ccajas_transacciones', 
+  'Master_mpagominimo'
+)
 #
 #
 #
@@ -30,8 +35,7 @@ xgboost_predict <- function(model, features, threshold = 0.025) {
     pull()
 }
 
-
-light_gbm_predict <- function(model, features, threshold = 0.025) {
+light_gbm_predict <- function(model, features, threshold = 0.031) {
   predictions <- predict(model, features)
   data.frame(target = predictions) %>% 
     dplyr::mutate(target = as.numeric(target > threshold)) %>%
@@ -42,12 +46,30 @@ light_gbm_predict <- function(model, features, threshold = 0.025) {
 # Generate Kaggle predictions file
 # URL: https://www.kaggle.com/c/uba-dmeyf2021-primera/
 #
-save_result <- function(test_set, test_pred, path="./K101_001.csv") {
+save_result <- function(
+  test_set, 
+  test_pred, 
+  path='../kaggle',
+  model_name = 'model',
+  params=list()
+) {
   result <- test_set %>%
     dplyr::mutate(Predicted = test_pred) %>%
     dplyr::select(numero_de_cliente, Predicted)
   
-  fwrite(result, file=path, sep="," )
+  file_path <- paste(
+    path, 
+    '/', 
+    strftime(Sys.time(), format="%Y-%m-%d_%H-%M-%S"),
+    '_',
+    model_name,
+    '_params_',
+    dict_to_string(params, sep='_'),
+    '.csv',
+    sep=''
+  )
+
+  fwrite(result, file=file_path, sep=",")
 }
 
 preprocessing <- function(dev_set, excludes=c()) {

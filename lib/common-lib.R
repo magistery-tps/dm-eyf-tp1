@@ -26,4 +26,6 @@ import('./test.R')
 import('./metrics.R')
 import('./balance.R')
 import('./cross_validation.R')
+import('./list.R')
+
 # ------------------------------------------------------------------------------

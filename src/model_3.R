@@ -1,83 +1,93 @@
+# https://www.kaggle.com/andrewmvd/lightgbm-in-r
+rm(list=ls())
 options(warn=-2)
 # ------------------------------------------------------------------------------
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(this.path, lightgbm, Matrix)
-p_load_gh("krlmlr/ulimit")
+p_load(this.path, lightgbm)
 setwd(this.path::this.dir())
 source('../lib/import.R')
 import('./common.R')
-------------------------------------------------------------------------------
-#
-#
-#
-#
 # ------------------------------------------------------------------------------
-# Main
-# ------------------------------------------------------------------------------
-ulimit::memory_limit(30000)
-
-# https://www.kaggle.com/andrewmvd/lightgbm-in-r
-
+#
+#
+#
+# -----------------------------------------------------------------------------
+# Load & preprocess dataset
+# -----------------------------------------------------------------------------
 # Load dev y test
 setwd(this.path::this.dir())
 raw_dev_set <- loadcsv("../dataset/paquete_premium_202009.csv")
-
-dev_set <- preprocessing(raw_dev_set, excludes = excluded_columns)
-show_groups(dev_set)
-
-dev_features <- Matrix(as.matrix(feat(dev_set)),   sparse=TRUE)
-dev_targets  <- Matrix(as.matrix(target(dev_set)), sparse=TRUE)
-ds           <- lgb.Dataset(data=dev_features, label=dev_targets)
+test_set    <- loadcsv("../dataset/paquete_premium_202011.csv")
+dev_set     <- preprocessing(raw_dev_set, excludes = excluded_columns)
+# show_groups(dev_set)
+# -----------------------------------------------------------------------------
+#
+#
+#
+# -----------------------------------------------------------------------------
+# Make a CV over development dataset
+# -----------------------------------------------------------------------------
+train_set = lgb.Dataset(
+  data  = data.matrix(feat(dev_set)), 
+  label = target(dev_set)
+)
 
 params = list(
-  objective               = "binary",
-  metric                  = "auc",
-  max_depth               = 3,
-  num_leaves              = 6, # 2^(max_depth)
-  learning_rate           = 0.01,
-  min_sum_hessian_in_leaf = 1,
-  feature_fraction        = 0.7,
-  bagging_fraction        = 1,
-  bagging_freq            = 10,
-  min_data                = 100,
-  max_bin                 = 50,
-  lambda_l1               = 8,
-  lambda_l2               = 1.3,
-  min_data_in_bin         = 10,
-  min_gain_to_split       = 10,
-  min_data_in_leaf        = 30,
-  is_unbalance            = TRUE
+  objective        = "binary",
+  max_bin          = 15,
+  min_data_in_leaf = 4000,
+  learning_rate    = 0.05
 )
-  
 
-dev_cv_model <- lgb.cv(
-  params          = params,
+cv_result <- lgb.cv(
 #  device          = "gpu",
 #  gpu_platform_id = 0,
 #  gpu_device_id   = 0,
 #  gpu_use_dp      = TRUE,
+  params          = params,
   nthread         = 24,
-  data            = ds,
-  nrounds         = 300,
+  nrounds         = 100,
   nfold           = 10,
-  stratified      = TRUE
+  stratified      = TRUE,
+  data            = train_set
 )
-dev_cv_model$best_score
+cv_result$best_score
+# -----------------------------------------------------------------------------
+#
+#
+#
+# -----------------------------------------------------------------------------
+# Train model with all development examples
+# -----------------------------------------------------------------------------
+model <- lightgbm(
+  train_set, 
+  params=params,
+  nrounds = 100,
+  nthread = 24
+)
+# -----------------------------------------------------------------------------
+#
+#
+#
+# -----------------------------------------------------------------------------
+# Predict over test_set
+# -----------------------------------------------------------------------------
+test_features <- test_set %>% 
+  dplyr::select(-c(excluded_columns, 'clase_ternaria'))
 
-Cstack_info()
-
-test_set      <- loadcsv("../dataset/paquete_premium_202011.csv")
-
-test_features <- test_set %>% dplyr::select(-c(excluded_columns, clase_ternaria))
-
-dtrain = dev_features <- model.matrix(~.-1, data=test_features) 
-
-test_pred <- light_gbm_predict(dev_cv_model, dtrain)
-
+test_pred <- light_gbm_predict(
+  model,
+  features  = data.matrix(test_features), 
+  threshold = 0.031
+)
 
 # Save prediction...
-save_result(test_set, test_pred)
-
+save_result(test_set, test_pred, model_name='light-gbm', params=params)
+# -----------------------------------------------------------------------------
+#
+#
+#
+#
 
