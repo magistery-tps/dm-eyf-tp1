@@ -42,10 +42,10 @@ params = list(
 )
 
 cv_result <- lgb.cv(
-#  device          = "gpu",
-#  gpu_platform_id = 0,
-#  gpu_device_id   = 0,
-#  gpu_use_dp      = TRUE,
+  #  device          = "gpu",
+  #  gpu_platform_id = 0,
+  #  gpu_device_id   = 0,
+  #  gpu_use_dp      = TRUE,
   params          = params,
   nthread         = 24,
   nrounds         = 100,
@@ -90,4 +90,3 @@ save_result(test_set, test_pred, model_name='light-gbm', params=params)
 #
 #
 #
-
