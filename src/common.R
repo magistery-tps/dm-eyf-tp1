@@ -47,11 +47,11 @@ light_gbm_predict <- function(model, features, threshold = 0.031) {
 # URL: https://www.kaggle.com/c/uba-dmeyf2021-primera/
 #
 save_result <- function(
-  test_set, 
-  test_pred, 
-  path='../kaggle',
+  test_set,
+  test_pred,
+  path       ='../kaggle',
   model_name = 'model',
-  params=list()
+  params     = list()
 ) {
   result <- test_set %>%
     dplyr::mutate(Predicted = test_pred) %>%
