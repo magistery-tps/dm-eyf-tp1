@@ -10,46 +10,63 @@ import('../../lib/object.R')
 #
 #
 #
+CVOptimizationContext <- function(optimization_manager, cv, train_set, hyper_params) {
+  new_instance(
+    'CVOptimizationContext',
+    'optimization_manager' = optimization_manager,
+    'cv'                   = cv,
+    'train_set'            = train_set,
+    'hyper_params'         = hyper_params
+  )
+}
+
+
 CVOptimizationManager <- function(
-  train_set, 
   eval_metric_fn, 
-  hyper_params_builder,
+  hyper_params_build_fn,
   on_after_cv_fn,
+  build_train_set_fn,
   nfold      = 10, 
   nthread    = 24,
   stratified = TRUE
 ) {
   new_instance(
-    'LightGBMCorssValidationOptimizeManager',
-    'nfold'                = nfold,
-    'train_set'            = train_set,
-    'eval_metric_fn'       = eval_metric_fn,
-    'hyper_params_builder' = hyper_params_builder,
-    'nthread'              = nthread,
-    'stratified'           = stratified,
-    'on_after_cv_fn'       = on_after_cv_fn
+    'CVOptimizationManager',
+    'nfold'                 = nfold,
+    'nthread'               = nthread,
+    'stratified'            = stratified,
+    'eval_metric_fn'        = eval_metric_fn,
+    'hyper_params_build_fn' = hyper_params_build_fn,
+    'on_after_cv_fn'        = on_after_cv_fn,
+    'build_train_set_fn'    = build_train_set_fn
   )
 }
 
 perform <- function(self, hiper_params) {
-  complete_hyper_params <- self$hyper_params_builder(hiper_params)
+  print('Light GBM Cross Validation..')
+  complete_hyper_params <- self$hyper_params_build_fn(hiper_params)
+  
+  print('Build train set..')
+  train_set <- self$build_train_set_fn(complete_hyper_params)
 
-  print('Start Light GBM Cross Validation..')
+  print('Start Cross Validation...')
   cv <- lgb.cv(
     eval            = self$eval_metric_fn,
     params          = complete_hyper_params,
     nthread         = self$nthread,
-    nfold           = self$nfold,
+    folds           = self$folds,
     stratified      = self$stratified,
-    data            = self$train_set
+    data            = train_set
   )
   
-  self$on_after_cv_fn(
+  ctx <- CVOptimizationContext(
     self, 
     cv,
-    complete_hyper_params,
-    hiper_params
+    train_set,
+    complete_hyper_params
   )
+  
+  self$on_after_cv_fn(ctx)
 }
 
 

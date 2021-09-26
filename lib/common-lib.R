@@ -28,4 +28,5 @@ import('./balance.R')
 import('./cross_validation.R')
 import('./list.R')
 import('./object.R')
+import('./currency.R')
 # ------------------------------------------------------------------------------

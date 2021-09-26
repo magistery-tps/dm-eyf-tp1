@@ -34,4 +34,8 @@ entrega <- dapply %>%
   select(numero_de_cliente, Predicted)
   
 #genero el archivo para Kaggle
-fwrite(entrega, file="./K101_001.csv", sep="," )
+save_result(
+  result       = entrega,
+  model_name   = 'rpart',
+  hyper_params = params
+)

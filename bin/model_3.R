@@ -84,7 +84,11 @@ test_pred <- light_gbm_predict(
 )
 
 # Save prediction...
-save_result(test_set, test_pred, model_name='light-gbm', params=params)
+save_result(
+  result       = kaggle_df(test_set, test_pred),
+  model_name   = 'light-gbm',
+  hyper_params = params
+)
 # -----------------------------------------------------------------------------
 #
 #

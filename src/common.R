@@ -3,7 +3,7 @@ options(warn=-2)
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(this.path, data.table, formattable)
+p_load(this.path, yaml)
 setwd(this.path::this.dir())
 source('../lib/import.R')
 import('../lib/common-lib.R')
@@ -46,30 +46,52 @@ light_gbm_predict <- function(model, features, threshold = 0.031) {
 # Generate Kaggle predictions file
 # URL: https://www.kaggle.com/c/uba-dmeyf2021-primera/
 #
-save_result <- function(
-  test_set,
-  test_pred,
-  path       ='../kaggle',
-  model_name = 'model',
-  params     = list()
-) {
-  result <- test_set %>%
-    dplyr::mutate(Predicted = test_pred) %>%
-    dplyr::select(numero_de_cliente, Predicted)
-  
-  file_path <- paste(
+
+
+default_filename <- function(path, model_name, params) {
+  paste(
     path, 
     '/', 
     strftime(Sys.time(), format="%Y-%m-%d_%H-%M-%S"),
     '_',
     model_name,
     '_params_',
-    dict_to_string(params, sep='_'),
-    '.csv',
+    dict_to_string(params),
     sep=''
   )
+}
 
-  fwrite(result, file=file_path, sep=",")
+build_gain_filename_fn <- function(gain) {
+  function(path, model_name, params) {
+    paste(
+      path,
+      '/', 
+      strftime(Sys.time(), format="%Y-%m-%d_%H-%M-%S"),
+      '_',
+      model_name,
+      '_gain_',
+      gain,
+      sep=''
+    )
+  }  
+}
+
+kaggle_df <-function(test_set, test_pred) {
+  test_set %>%
+    dplyr::mutate(Predicted = test_pred) %>%
+    dplyr::select(numero_de_cliente, Predicted)
+}
+
+save_result <- function(
+  result,
+  path         ='../results',
+  model_name   = 'model',
+  hyper_params = list(),
+  filename_fn  = default_filename
+) {
+  filename <- filename_fn(path, model_name, hyper_params)
+  fwrite(result, file=paste(filename, '.csv', sep=''), sep=",")
+  write_yaml(as.yaml(hyper_params), file=paste(filename, '.yml', sep=''))
 }
 
 preprocessing <- function(dev_set, excludes=c()) {

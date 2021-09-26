@@ -275,5 +275,9 @@ test_pred <- xgboost_predict(
 xgb.plot.tree(model=dev_model, trees = nrounds-1)
 
 # Save prediction...
-save_result(test_set, test_pred, model_name='xgboost', params=params)
+save_result(
+  result       = kaggle_df(test_set, test_pred),
+  model_name   = 'xgboost',
+  hyper_params = params
+)
   
