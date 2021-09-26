@@ -1,3 +1,4 @@
+options(warn=-2)
 # ------------------------------------------------------------------------------
 # Import dependencies
 # ------------------------------------------------------------------------------
@@ -8,8 +9,6 @@ p_load(stringi, tidyverse, plotly)
 #
 #
 #
-options(warn=-1)
-
 pie_plot <- function(data, title) {
   values = table(data)
   labels = paste(names(values), " (", values, ")", sep="")

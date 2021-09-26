@@ -48,3 +48,4 @@ po/*~
 dataset/
 LightGBM/
 BO.RDATA
+lightgbm.model

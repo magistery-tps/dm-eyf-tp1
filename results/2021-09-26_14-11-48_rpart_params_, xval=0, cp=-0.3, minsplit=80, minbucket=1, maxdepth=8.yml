@@ -1,0 +1,6 @@
+|
+  xval: 0.0
+  cp: -0.3
+  minsplit: 80.0
+  minbucket: 1.0
+  maxdepth: 8.0

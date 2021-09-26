@@ -3,8 +3,9 @@
 # ------------------------------------------------------------------------------
 p_load(this.path, lightgbm)
 setwd(this.path::this.dir())
-source('../../lib/import.R')
-import('../../lib/object.R')
+source('../../import.R')
+#
+import('./common/object.R')
 # ------------------------------------------------------------------------------
 #
 #
@@ -20,12 +21,12 @@ CVOptimizationContext <- function(optimization_manager, cv, train_set, hyper_par
   )
 }
 
-
 CVOptimizationManager <- function(
   eval_metric_fn, 
-  hyper_params_build_fn,
-  on_after_cv_fn,
+  build_hyper_params_fn,
   build_train_set_fn,
+  on_before_cv_fn = NULL,
+  on_after_cv_fn,
   nfold      = 10, 
   nthread    = 24,
   stratified = TRUE
@@ -36,20 +37,32 @@ CVOptimizationManager <- function(
     'nthread'               = nthread,
     'stratified'            = stratified,
     'eval_metric_fn'        = eval_metric_fn,
-    'hyper_params_build_fn' = hyper_params_build_fn,
-    'on_after_cv_fn'        = on_after_cv_fn,
-    'build_train_set_fn'    = build_train_set_fn
+    'build_hyper_params_fn' = build_hyper_params_fn,
+    'build_train_set_fn'    = build_train_set_fn,
+    'on_before_cv_fn'       = on_before_cv_fn,
+    'on_after_cv_fn'        = on_after_cv_fn
   )
 }
 
 perform <- function(self, hiper_params) {
-  print('Light GBM Cross Validation..')
-  complete_hyper_params <- self$hyper_params_build_fn(hiper_params)
+  print('Call build train set event..')
+  complete_hyper_params <- self$build_hyper_params_fn(hiper_params)
   
-  print('Build train set..')
+  print('Call build train set event..')
   train_set <- self$build_train_set_fn(complete_hyper_params)
 
-  print('Start Cross Validation...')
+  if(!is.null(self$on_before_cv_fn)) {
+    print('Call on_before_cv_fn event...')
+    ctx <- CVOptimizationContext(
+      self, 
+      NULL,
+      train_set,
+      complete_hyper_params
+    )
+    self$on_before_cv_fn(ctx)
+  }
+
+  print('Perform Light GBM Cross Validation...')
   cv <- lgb.cv(
     eval            = self$eval_metric_fn,
     params          = complete_hyper_params,
@@ -59,6 +72,7 @@ perform <- function(self, hiper_params) {
     data            = train_set
   )
   
+  print('Call on_after_cv_fn event...')
   ctx <- CVOptimizationContext(
     self, 
     cv,
@@ -68,8 +82,3 @@ perform <- function(self, hiper_params) {
   
   self$on_after_cv_fn(ctx)
 }
-
-
-
-
-

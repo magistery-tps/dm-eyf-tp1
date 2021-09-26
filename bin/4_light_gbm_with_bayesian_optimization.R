@@ -1,3 +1,4 @@
+cat("\014")
 rm(list=ls())
 options(warn=-2)
 # ------------------------------------------------------------------------------
@@ -7,8 +8,9 @@ library(pacman)
 p_load(this.path, DiceKriging, mlrMBO, scales)
 setwd(this.path::this.dir())
 source('../lib/import.R')
+#
 import('../src/common.R')
-import('../src/light_gbm/load.R')
+import('../src/light_gbm/cv_result.R')
 # ------------------------------------------------------------------------------
 #
 #
@@ -18,11 +20,9 @@ import('../src/light_gbm/load.R')
 # -----------------------------------------------------------------------------
 # Load dev y test
 setwd(this.path::this.dir())
-raw_dev_set <- loadcsv("../dataset/paquete_premium_202009.csv")
-test_set    <- loadcsv("../dataset/paquete_premium_202011.csv")
+raw_dev_set <- load_train_set()
+test_set    <- load_test_set()
 dev_set     <- preprocessing(raw_dev_set, excludes = excluded_columns)
-
-
 
 
 build_train_set_fn <- function(hiper_params) {
@@ -163,7 +163,7 @@ objetive_fn <- makeSingleObjectiveFunction(
   has.simple.signature = FALSE  # Paso los parametros en una lista
 )
 
-bo_data_path <- paste('../BO.RDATA', sep='')
+bo_data_path <- paste('../BO.FE.RDATA', sep='')
 
 # Se graba cada 600 segundos
 ctrl <- makeMBOControl(

@@ -1,0 +1,9 @@
+|
+  nthread: 24.0
+  max_depth: 2.0
+  verbose: yes
+  eta: 0.5
+  alpha: 5.0
+  gamma: 10.0
+  eval_metric: auc
+  objective: binary:logistic

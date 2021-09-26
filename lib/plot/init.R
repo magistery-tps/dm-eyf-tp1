@@ -1,13 +1,16 @@
+print('Init plot module...')
+options(warn=-2)
 # ------------------------------------------------------------------------------
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(devtools, stringi, dplyr, WVPlots, DT, plotly, GGally, Hmisc, ggrepel, nortest)
+p_load(this.path, devtools, stringi, dplyr, WVPlots, DT, plotly, GGally, Hmisc, ggrepel, nortest)
 p_load_gh("vqv/ggbiplot")
-options(warn=-1)
-
-source('../lib/plot/hist.R')
-source('../lib/plot/pie.R')
+setwd(this.path::this.dir())
+source('../import.R')
+#
+import('./plot/hist.R')
+import('./plot/pie.R')
 # ------------------------------------------------------------------------------
 #
 #

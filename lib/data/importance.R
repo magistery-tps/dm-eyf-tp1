@@ -4,9 +4,9 @@
 library(pacman)
 p_load(this.path, randomForest, dplyr)
 setwd(this.path::this.dir())
-source('./import.R')
+source('../import.R')
 #
-import('./data-frame.R')
+import('./data/data-frame.R')
 # ------------------------------------------------------------------------------
 #
 #

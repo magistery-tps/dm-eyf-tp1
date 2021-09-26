@@ -1,4 +1,4 @@
-# https://www.kaggle.com/andrewmvd/lightgbm-in-r
+cat("\014")
 rm(list=ls())
 options(warn=-2)
 # ------------------------------------------------------------------------------
@@ -8,6 +8,7 @@ library(pacman)
 p_load(this.path, lightgbm)
 setwd(this.path::this.dir())
 source('../lib/import.R')
+#
 import('../src/common.R')
 # ------------------------------------------------------------------------------
 #
@@ -18,10 +19,9 @@ import('../src/common.R')
 # -----------------------------------------------------------------------------
 # Load dev y test
 setwd(this.path::this.dir())
-raw_dev_set <- loadcsv("../dataset/paquete_premium_202009.csv")
-test_set    <- loadcsv("../dataset/paquete_premium_202011.csv")
+raw_dev_set <- load_train_set()
+test_set    <- load_test_set()
 dev_set     <- preprocessing(raw_dev_set, excludes = excluded_columns)
-# show_groups(dev_set)
 # -----------------------------------------------------------------------------
 #
 #
@@ -84,7 +84,7 @@ test_pred <- light_gbm_predict(
 )
 
 # Save prediction...
-save_result(
+save_model_result(
   result       = kaggle_df(test_set, test_pred),
   model_name   = 'light-gbm',
   hyper_params = params

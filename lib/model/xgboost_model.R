@@ -9,14 +9,21 @@ p_load(
   DiagrammeR, 
   stringr
 )
-setwd(this.path::this.dir())
 # ------------------------------------------------------------------------------
 #
 #
 #
 #
-feat        <- function(data) data %>% dplyr::select(-target)
-target      <- function(data) data %>% dplyr::select(target) %>% pull()
+xgboost_predict <- function(model, features, threshold=.5, positive=1, negative=0) {
+  model_predict(model, as.matrix(features), threshold, positive, negative)
+}
+
+xgboost_predict <- function(model, features, threshold = 0.025) {
+  predictions <- predict(model, as.matrix(features))
+  data.frame(target = predictions) %>% 
+    dplyr::mutate(target = as.numeric(target > threshold)) %>%
+    pull()
+}
 
 xgb_default_params <- function() {
   list(
@@ -45,7 +52,6 @@ xgboost_train <- function(data, params=xgb_default_params(), nrounds=10) {
     verbose = verbose
   )
 }
-
 
 xgboost_cv <- function(
   data,
@@ -91,8 +97,6 @@ plot_xgboost_cv_train_vs_val <- function(
     ) +
     ggtitle(title)
 }
-
-
 
 
 map_it <- function(array, fn) {

@@ -1,11 +1,13 @@
+options(warn=-2)
 # ------------------------------------------------------------------------------
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(stringi, tidyverse, modeest, plotly)
-options(warn=-1)
-
-source('../lib/data-frame.R')
+p_load(this.path, stringi, tidyverse, modeest, plotly)
+setwd(this.path::this.dir())
+source('../import.R')
+#
+import('./data/data-frame.R')
 # ------------------------------------------------------------------------------
 #
 #

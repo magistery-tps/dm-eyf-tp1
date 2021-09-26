@@ -2,16 +2,11 @@
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(
-  this.path,
-  ggplot,
-  xgboost, 
-  DiagrammeR, 
-  stringr
-)
+p_load(this.path, stringr)
 setwd(this.path::this.dir())
+source('../import.R')
 #
-import('./metrics.R')
+import('./model/metrics.R')
 # ------------------------------------------------------------------------------
 #
 #

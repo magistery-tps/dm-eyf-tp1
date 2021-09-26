@@ -1,9 +1,14 @@
+print('Init common module...')
 # ------------------------------------------------------------------------------
 # Import dependencies
 # ------------------------------------------------------------------------------
+library(pacman)
 p_load(this.path)
 setwd(this.path::this.dir())
-source('../../lib/import.R')
-import('./cv_result.R')
-import('./cv_optimization_manager.R')
+source('../import.R')
+#
+import('./common/currency.R')
+import('./common/list.R')
+import('./common/object.R')
+import('./common/reflection.R')
 # ------------------------------------------------------------------------------
