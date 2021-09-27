@@ -120,6 +120,7 @@ PSI <- function(columns, train, test, nsamples=100000) {
 test_result <- k_test(important_features, dev_set, test_set)
 psi_result  <- PSI(important_features, dev_set, test_set)
 report      <- test_result %>% left_join(psi_result, by = 'feature')
-View(report)
+
+fwrite(report, file=paste('../../reports/data_drift_report.csv', sep=''), sep=",")
 
 
