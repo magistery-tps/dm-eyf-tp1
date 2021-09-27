@@ -7,7 +7,7 @@ options(warn=-2)
 library(pacman)
 p_load(this.path, lightgbm)
 setwd(this.path::this.dir())
-source('../lib/import.R')
+source('../../lib/import.R')
 #
 import('../src/common.R')
 # ------------------------------------------------------------------------------

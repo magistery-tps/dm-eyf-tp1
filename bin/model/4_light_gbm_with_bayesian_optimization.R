@@ -7,7 +7,7 @@ options(warn=-2)
 library(pacman)
 p_load(this.path, DiceKriging, mlrMBO, scales)
 setwd(this.path::this.dir())
-source('../lib/import.R')
+source('../../lib/import.R')
 #
 import('../src/common.R')
 import('../src/light_gbm/cv_result.R')

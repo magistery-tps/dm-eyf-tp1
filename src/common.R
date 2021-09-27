@@ -17,7 +17,7 @@ import('./init.R')
 # ------------------------------------------------------------------------------
 excluded_columns = c(
   'numero_de_cliente', 
-  'foto_mes', 
+  'foto_mes',
   'ccajas_transacciones', 
   'Master_mpagominimo'
 )
@@ -29,11 +29,11 @@ excluded_columns = c(
 # Functions
 # ------------------------------------------------------------------------------
 load_train_set <- function() {
-  loadcsv("../dataset/original/paquete_premium_202009.csv")
+  loadcsv("../../dataset/original/paquete_premium_202009.csv")
 }
 
 load_test_set <- function() {
-  loadcsv("../dataset/original/paquete_premium_202011.csv")
+  loadcsv("../../dataset/original/paquete_premium_202011.csv")
 }
 
 build_gain_filename_fn <- function(gain) {
