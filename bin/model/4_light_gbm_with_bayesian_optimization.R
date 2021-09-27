@@ -19,9 +19,13 @@ import('../src/light_gbm/cv_result.R')
 # Load & preprocess dataset
 # -----------------------------------------------------------------------------
 # Load dev y test
+
+# dataset_type <- 'original'
+dataset_type <- 'enriched'
+
 setwd(this.path::this.dir())
-raw_dev_set <- load_train_set()
-test_set    <- load_test_set()
+raw_dev_set <- load_train_set(dataset_type)
+test_set    <- load_test_set(dataset_type)
 dev_set     <- preprocessing(raw_dev_set, excludes = excluded_columns)
 
 
@@ -91,9 +95,9 @@ on_after_cv_fn <- function(ctx) {
     )
 
 
-    save_result(
+    save_model_result(
       result       = kaggle_df(test_set, test_pred),
-      model_name   = 'bo-light-gbm',
+      model_name   = paste('bo-light-gbm-', dataset_type, sep=''),
       hyper_params = ctx$hyper_params,
       filename_fn  = build_gain_filename_fn(result$gain)
     )
@@ -111,7 +115,7 @@ on_after_cv_fn <- function(ctx) {
 }
 
 
-hyper_params_build_fn <- function(hyper_params) {
+build_hyper_params_fn <- function(hyper_params) {
   c(
     hyper_params, 
     list(
@@ -123,15 +127,16 @@ hyper_params_build_fn <- function(hyper_params) {
       verbosity             = -100,
       seed                  = 999983,
       num_iterations        = 9999, # Un numero muy grande, lo limita early_stopping_rounds
-      force_row_wise        = TRUE,  # Para que los alumnos no se atemoricen con tantos warning
+      force_row_wise        = TRUE, # Para que los alumnos no se atemoricen con tantos warning
       early_stopping_rounds = as.integer(50 + 5 / hyper_params$learning_rate)
     )
   )
 }
 
+
 optimization_manager <- CVOptimizationManager(
   eval_metric_fn        = eval_metric_fn_builder(min_threshold = 0.031), 
-  hyper_params_build_fn = hyper_params_build_fn,
+  build_hyper_params_fn = build_hyper_params_fn,
   on_after_cv_fn        = on_after_cv_fn,
   build_train_set_fn    = build_train_set_fn,
   nfold                 = 10, 
@@ -163,7 +168,7 @@ objetive_fn <- makeSingleObjectiveFunction(
   has.simple.signature = FALSE  # Paso los parametros en una lista
 )
 
-bo_data_path <- paste('../BO.FE.RDATA', sep='')
+bo_data_path <- paste('../../bo.', dataset_type, '.rdata', sep='')
 
 # Se graba cada 600 segundos
 ctrl <- makeMBOControl(
@@ -179,7 +184,7 @@ ctrl <- setMBOControlTermination(
 
 ctrl <- setMBOControlInfill(ctrl, crit = makeMBOInfillCritEI())
 
-# Establezco la funcion que busca el maximo
+# Establezco la función que busca el máximo
 surr.km <- makeLearner(
   "regr.km",
   predict.type = "se",

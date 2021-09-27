@@ -20,7 +20,7 @@ import('../src/common.R')
 # -----------------------------------------------------------------------------
 # Load dev y test
 setwd(this.path::this.dir())
-dev_set  <- preprocessing(load_train_set(), excludes = excluded_columns)
+dev_set  <- preprocessing(load_train_set(), excludes = c('numero_de_cliente', 'foto_mes'))
 test_set <- load_test_set()
 
 train_set = lgb.Dataset(data  = data.matrix(feat(dev_set)), label = target(dev_set))
@@ -81,7 +81,7 @@ k_test <- function(
     result <- result %>% add_row(
       feature            = column,
       k_test_p_value     = k_test_p_value,
-      k_test_h0_rejected = k_test_p_value > max_p_value
+      k_test_h0_rejected = k_test_p_value < max_p_value
     )
   }
   result %>% arrange(desc(k_test_p_value))

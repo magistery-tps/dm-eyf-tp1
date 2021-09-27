@@ -28,12 +28,11 @@ excluded_columns = c(
 # ------------------------------------------------------------------------------
 # Functions
 # ------------------------------------------------------------------------------
-load_train_set <- function() {
-  loadcsv("../../dataset/original/paquete_premium_202009.csv")
+load_train_set <- function(type='original') {
+  loadcsv(paste('../../dataset/', type , '/paquete_premium_202009.csv', sep=''))
 }
-
-load_test_set <- function() {
-  loadcsv("../../dataset/original/paquete_premium_202011.csv")
+load_test_set <- function(type='original') {
+  loadcsv(paste('../../dataset/', type, '/paquete_premium_202011.csv', sep=''))
 }
 
 build_gain_filename_fn <- function(gain) {

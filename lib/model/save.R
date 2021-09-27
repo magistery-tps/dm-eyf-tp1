@@ -2,7 +2,7 @@
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(this.path, yaml)
+p_load(this.path, yaml, data.table)
 # ------------------------------------------------------------------------------
 #
 #
@@ -23,7 +23,7 @@ default_filename_fn <- function(path, model_name, params) {
 
 save_model_result <- function(
   result,
-  path         ='../results',
+  path         ='../../results',
   model_name   = 'model',
   hyper_params = list(),
   filename_fn  = default_filename_fn
