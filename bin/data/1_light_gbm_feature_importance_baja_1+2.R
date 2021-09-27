@@ -84,7 +84,7 @@ k_test <- function(
       k_test_h0_rejected = k_test_p_value < max_p_value
     )
   }
-  result %>% arrange(desc(k_test_p_value))
+  result %>% arrange(k_test_p_value)
 }
 
 # Usually we can believe the population stays the same as the past if psi is less than 0.1,

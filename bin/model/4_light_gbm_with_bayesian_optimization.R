@@ -19,10 +19,7 @@ import('../src/light_gbm/cv_result.R')
 # Load & preprocess dataset
 # -----------------------------------------------------------------------------
 # Load dev y test
-
-# dataset_type <- 'original'
-dataset_type <- 'enriched'
-
+dataset_type <- 'enriched' # original'
 setwd(this.path::this.dir())
 raw_dev_set <- load_train_set(dataset_type)
 test_set    <- load_test_set(dataset_type)
