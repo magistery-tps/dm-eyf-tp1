@@ -5,7 +5,7 @@ options(warn=-2)
 # Import dependencies
 # ------------------------------------------------------------------------------
 library(pacman)
-p_load(this.path, lightgbm, yaml)
+p_load(this.path, lightgbm, yaml, philentropy)
 p_load_gh("siyuany/rpsi")
 setwd(this.path::this.dir())
 source('../../lib/import.R')
@@ -18,7 +18,6 @@ import('../src/common.R')
 # -----------------------------------------------------------------------------
 # Load & preprocess dataset
 # -----------------------------------------------------------------------------
-# Load dev y test
 setwd(this.path::this.dir())
 dev_set  <- preprocessing(load_train_set(), excludes = c('numero_de_cliente', 'foto_mes'))
 test_set <- load_test_set()
@@ -122,5 +121,7 @@ psi_result  <- PSI(important_features, dev_set, test_set)
 report      <- test_result %>% left_join(psi_result, by = 'feature')
 
 fwrite(report, file=paste('../../reports/data_drift_report.csv', sep=''), sep=",")
+
+quit( save="no")
 
 

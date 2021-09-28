@@ -7,21 +7,24 @@ options(warn=-2)
 library(pacman)
 p_load(data.table)
 setwd(this.path::this.dir())
+source('../../lib/import.R')
+#
+import('../src/common.R')
 # ------------------------------------------------------------------------------
 #
 #
 #
-EnriquecerDataset <- function( dataset , arch_destino ) {
-  columnas_originales <-  copy(colnames( dataset ))
+enrich_dataset <- function(dataset, target_path) {
+  original_columns <- colnames(dataset)
 
-  #INICIO de la seccion donde se deben hacer cambios con variables nuevas
-  #se crean los nuevos campos para MasterCard  y Visa, teniendo en cuenta los NA's
-  #varias formas de combinar Visa_status y Master_status
-  dataset[ , mv_status01       := pmax( Master_status,  Visa_status, na.rm = TRUE) ]
-  dataset[ , mv_status02       := Master_status +  Visa_status ]
-  dataset[ , mv_status03       := pmax( ifelse( is.na(Master_status), 10, Master_status) , ifelse( is.na(Visa_status), 10, Visa_status) ) ]
-  dataset[ , mv_status04       := ifelse( is.na(Master_status), 10, Master_status)  +  ifelse( is.na(Visa_status), 10, Visa_status)  ]
-  dataset[ , mv_status05       := ifelse( is.na(Master_status), 10, Master_status)  +  100*ifelse( is.na(Visa_status), 10, Visa_status)  ]
+  # INICIO de la sección donde se deben hacer cambios con variables nuevas
+  # se crean los nuevos campos para MasterCard  y Visa, teniendo en cuenta los NA's
+  # varias formas de combinar Visa_status y Master_status
+  dataset[ , mv_status01 := pmax( Master_status,  Visa_status, na.rm = TRUE) ]
+  dataset[ , mv_status02 := Master_status +  Visa_status ]
+  dataset[ , mv_status03 := pmax( ifelse( is.na(Master_status), 10, Master_status) , ifelse( is.na(Visa_status), 10, Visa_status) ) ]
+  dataset[ , mv_status04 := ifelse( is.na(Master_status), 10, Master_status)  +  ifelse( is.na(Visa_status), 10, Visa_status)  ]
+  dataset[ , mv_status05 := ifelse( is.na(Master_status), 10, Master_status)  +  100*ifelse( is.na(Visa_status), 10, Visa_status)  ]
 
   dataset[ , mv_status06       := ifelse( is.na(Visa_status), 
                                           ifelse( is.na(Master_status), 10, Master_status), 
@@ -31,8 +34,7 @@ EnriquecerDataset <- function( dataset , arch_destino ) {
                                           ifelse( is.na(Visa_status), 10, Visa_status), 
                                           Master_status)  ]
 
-
-  #combino MasterCard y Visa
+  # Combino MasterCard y Visa
   dataset[ , mv_mfinanciacion_limite := rowSums( cbind( Master_mfinanciacion_limite,  Visa_mfinanciacion_limite) , na.rm=TRUE ) ]
 
   dataset[ , mv_Fvencimiento         := pmin( Master_Fvencimiento, Visa_Fvencimiento, na.rm = TRUE) ]
@@ -55,7 +57,7 @@ EnriquecerDataset <- function( dataset , arch_destino ) {
   dataset[ , mv_cadelantosefectivo   := rowSums( cbind( Master_cadelantosefectivo,  Visa_cadelantosefectivo) , na.rm=TRUE ) ]
   dataset[ , mv_mpagominimo          := rowSums( cbind( Master_mpagominimo,  Visa_mpagominimo) , na.rm=TRUE ) ]
 
-  #a partir de aqui juego con la suma de Mastercard y Visa
+  # A partir de aquí juego con la suma de Mastercard y Visa
   dataset[ , mvr_Master_mlimitecompra:= Master_mlimitecompra / mv_mlimitecompra ]
   dataset[ , mvr_Visa_mlimitecompra  := Visa_mlimitecompra / mv_mlimitecompra ]
   dataset[ , mvr_msaldototal         := mv_msaldototal / mv_mlimitecompra ]
@@ -73,45 +75,44 @@ EnriquecerDataset <- function( dataset , arch_destino ) {
   dataset[ , mvr_mconsumototal       := mv_mconsumototal  / mv_mlimitecompra ]
   dataset[ , mvr_mpagominimo         := mv_mpagominimo  / mv_mlimitecompra ]
 
-  #valvula de seguridad para evitar valores infinitos
-  #paso los infinitos a NULOS
-  infinitos      <- lapply(names(dataset),function(.name) dataset[ , sum(is.infinite(get(.name)))])
-  infinitos_qty  <- sum( unlist( infinitos) )
-  if( infinitos_qty > 0 )
-  {
-    cat( "ATENCION, hay", infinitos_qty, "valores infinitos en tu dataset. Seran pasados a NA\n" )
+  # Válvula de seguridad para evitar valores infinitos. Paso los infinitos a NULOS.
+  infinitos     <- lapply(
+    names(dataset),
+    function(.name) dataset[ , sum(is.infinite(get(.name)))]
+  )
+  infinitos_qty <- sum(unlist(infinitos))
+
+  if(infinitos_qty > 0) {
+    cat("ATENCION! Hay ", infinitos_qty, " valores infinitos en tu dataset. Seran pasados a NA.\n" )
     dataset[mapply(is.infinite, dataset)] <- NA
   }
 
-
-  #valvula de seguridad para evitar valores NaN  que es 0/0
-  #paso los NaN a 0 , decision polemica si las hay
-  #se invita a asignar un valor razonable segun la semantica del campo creado
+  # Válvula de seguridad para evitar valores NaN que es 0/0. Paso los NaN a 0, decisión polémica
+  # si las hay. Se invita a asignar un valor razonable según la semántica del campo creado.
   nans      <- lapply(names(dataset),function(.name) dataset[ , sum(is.nan(get(.name)))])
   nans_qty  <- sum( unlist( nans) )
-  if( nans_qty > 0 )
-  {
-    cat( "ATENCION, hay", nans_qty, "valores NaN 0/0 en tu dataset. Seran pasados arbitrariamente a 0\n" )
+
+  if(nans_qty > 0) {
+    cat( "ATENCION! Hay ", nans_qty, " valores NaN 0/0 en tu dataset. Seran pasados arbitrariamente a 0.\n" )
     cat( "Si no te gusta la decision, modifica a gusto el programa!\n\n")
     dataset[mapply(is.nan, dataset)] <- 0
   }
 
-  #FIN de la seccion donde se deben hacer cambios con variables nuevas
+  #FIN de la sección donde se deben hacer cambios con variables nuevas
 
-  columnas_extendidas <-  copy( setdiff(  colnames(dataset), columnas_originales ) )
+  extended_columns <- setdiff(colnames(dataset), original_columns)
+  print(paste('Nuevas columnas:', extended_columns))
 
-  #grabo con nombre extendido
-  fwrite( dataset,
-          file=arch_destino,
-          sep= "," )
+  # Grabo con nombre extendido
+  fwrite(dataset, file=target_path, sep= "," )
 }
 #------------------------------------------------------------------------------
 
-#lectura rapida del dataset  usando fread  de la libreria  data.table
-dataset1  <- fread("../../dataset/original/paquete_premium_202009.csv")
-dataset2  <- fread("../../dataset/original/paquete_premium_202011.csv")
+# Lectura rápida del dataset usando fread de la librería data.table
+train_set <- load_train_set()
+test_set  <- load_test_set()
 
-EnriquecerDataset( dataset1, "../../dataset/enriched/paquete_premium_202009.csv" )
-EnriquecerDataset( dataset2, "../../dataset/enriched/paquete_premium_202011.csv" )
+enrich_dataset(train_set, "../../dataset/enriched/paquete_premium_202009.csv")
+enrich_dataset(test_set, "../../dataset/enriched/paquete_premium_202011.csv")
 
 quit( save="no")
