@@ -44,7 +44,7 @@ build_dataset <- function(
 
 model_cv <- function(
   dataset,
-  params  = list(objective='binary', metric='auc'),
+  params  = list(objective='binary', metric='auc', max_depth=2),
   nrounds = 10,
   nthread = 24,
   nfold   = 10
