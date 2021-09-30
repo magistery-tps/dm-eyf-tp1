@@ -16,11 +16,15 @@ import('../src/light_gbm/cv_result.R')
 #
 #
 # -----------------------------------------------------------------------------
+# Parameters
+# -----------------------------------------------------------------------------
+dataset_type <- 'original' # original'
+model_name   <- paste('bo-light_gbm-data_drift-', dataset_type, sep='')
+#
+# -----------------------------------------------------------------------------
 # Load & preprocess dataset
 # -----------------------------------------------------------------------------
 # Load dev y test
-dataset_type <- 'original' # original'
-setwd(this.path::this.dir())
 raw_dev_set <- load_train_set(dataset_type)
 test_set    <- load_test_set(dataset_type)
 dev_set     <- preprocessing(raw_dev_set, excludes = excluded_columns)
@@ -90,11 +94,13 @@ on_after_cv_fn <- function(ctx) {
       features  = data.matrix(test_features), 
       threshold = hyper_params$threshold
     )
-
+    
+    positives_count <- sum(test_pred)
+    print(paste('Positives:', positives_count))
 
     save_model_result(
       result       = kaggle_df(test_set, test_pred),
-      model_name   = paste('bo-light-gbm-', dataset_type, sep=''),
+      model_name   = paste(model_name, '-positives_', positives_count, sep=''),
       hyper_params = ctx$hyper_params,
       filename_fn  = build_gain_filename_fn(result$gain)
     )

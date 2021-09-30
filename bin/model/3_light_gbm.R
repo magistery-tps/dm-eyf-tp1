@@ -37,16 +37,16 @@ train_set = lgb.Dataset(
 )
 
 params = list(
-  objective        = "binary",
-  max_bin          = 15,
-  min_data_in_leaf = 4000,
-  learning_rate    = 0.05,
-  metric           = 'auc',
-  first_metric_only = TRUE,
+  objective          = "binary",
+  max_bin            = 15,
+  min_data_in_leaf   = 4000,
+  learning_rate      = 0.05,
+  metric             = 'auc',
+  first_metric_only  = TRUE,
   boost_from_average = TRUE,
-#  feature_pre_filter = FALSE
-  seed = 999983.0,
-  force_row_wise = TRUE
+  feature_pre_filter = FALSE,
+  seed               = 999983.0,
+  force_row_wise     = TRUE
 )
 
 cv_result <- lgb.cv(
