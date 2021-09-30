@@ -27,9 +27,9 @@ CVOptimizationManager <- function(
   build_train_set_fn,
   on_before_cv_fn = NULL,
   on_after_cv_fn,
-  nfold      = 10, 
-  nthread    = 24,
-  stratified = TRUE
+  nfold           = 10, 
+  nthread         = 24,
+  stratified      = TRUE
 ) {
   new_instance(
     'CVOptimizationManager',

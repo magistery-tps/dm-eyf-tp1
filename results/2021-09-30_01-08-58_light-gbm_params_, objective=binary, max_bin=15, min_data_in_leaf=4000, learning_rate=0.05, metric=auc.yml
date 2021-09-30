@@ -1,6 +1,0 @@
-|
-  objective: binary
-  max_bin: 15.0
-  min_data_in_leaf: 4000.0
-  learning_rate: 0.05
-  metric: auc

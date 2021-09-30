@@ -57,7 +57,7 @@ colnames(final_train_set)
 
 
 fwrite(final_train_set, file="../../dataset/enriched/paquete_premium_202009.csv", sep= "," )
-fwrite(final_test_set, file="../../dataset/enriched/paquete_premium_202011.csv", sep= "," )
+fwrite(final_test_set,  file="../../dataset/enriched/paquete_premium_202011.csv", sep= "," )
 # -----------------------------------------------------------------------------
 #
 #

@@ -18,7 +18,7 @@ import('../src/light_gbm/cv_result.R')
 # -----------------------------------------------------------------------------
 # Parameters
 # -----------------------------------------------------------------------------
-dataset_type <- 'original' # original'
+dataset_type <- 'enriched' # original'
 model_name   <- paste('bo-light_gbm-data_drift-', dataset_type, sep='')
 #
 # -----------------------------------------------------------------------------
@@ -28,6 +28,7 @@ model_name   <- paste('bo-light_gbm-data_drift-', dataset_type, sep='')
 raw_dev_set <- load_train_set(dataset_type)
 test_set    <- load_test_set(dataset_type)
 dev_set     <- preprocessing(raw_dev_set, excludes = excluded_columns)
+
 
 
 build_train_set_fn <- function(hiper_params) {
@@ -41,12 +42,8 @@ build_train_set_fn <- function(hiper_params) {
     max_bin = hiper_params$max_bin
   )
 }
-
 test_features <- test_set %>% 
   dplyr::select(-c(excluded_columns, 'clase_ternaria'))
-
-
-
 
 
 
@@ -54,15 +51,55 @@ eval_metric_fn_builder <- function(min_threshold) {
   function(probs, data) {
     labels  <- data$getinfo('label')
     weights <- data$getinfo('weight')
-    
+
     # Aqui esta el inmoral uso de los pesos para calcular la ganancia correcta
     gain  <- sum( 
       (probs > min_threshold) * ifelse(labels== 1 & weights > 1, 48750, -1250 )
     )
-    
     list("name"= "gain", "value"= gain, "higher_better"= TRUE)
   }  
 }
+
+
+
+predict_on_train <- function(ctx, hyper_params) {
+  print('Start train predictions...')
+  train_model <- lightgbm(
+    data    = ctx$train_set, 
+    params  = hyper_params,
+    nrounds = 100,
+    nthread = ctx$optimization_manager$nthread
+  )
+  train_pred <- light_gbm_predict(
+    train_model,
+    features  = data.matrix(feat(dev_set)),
+    threshold = hyper_params$threshold
+  )
+  
+  train_positives_count <- sum(train_pred)
+  print(paste('Train Positives:', train_positives_count))
+  train_positives_count
+}
+
+predict_on_test <- function(ctx, hyper_params) {
+  print('Start test predictions...')
+  test_model <- lightgbm(
+    data    = ctx$train_set, 
+    param   = hyper_params, 
+    verbose = -100
+  )
+  
+  test_pred <- light_gbm_predict(
+    test_model,
+    features  = data.matrix(test_features), 
+    threshold = hyper_params$threshold
+  )
+  
+  test_positives_count <- sum(test_pred)
+  print(paste('Test Positives:', test_positives_count))
+  list(test_positives_count, test_pred)
+}
+
 
 
 
@@ -71,39 +108,31 @@ GLOBAL_max_gain <- 0
 on_after_cv_fn <- function(ctx) {
   cat("\014")
   result <- CVResult(ctx)
-  
-  if(result$gain > GLOBAL_max_gain) {
-    GLOBAL_max_gain <<- result$gain
-    print(paste('Found a new best model with gain:', currency_to_str(GLOBAL_max_gain)))
 
-    print('Train model test predictions...')
+  if(result$gain > GLOBAL_max_gain) {
+    print(paste('Found a new best model with gain:', currency_to_str(result$gain)))
 
     hyper_params                       <- ctx$hyper_params
     hyper_params$early_stopping_rounds <- NULL
     hyper_params$num_iterations        <- ctx$cv$best_iter # Asigno el mejor num_iterations
 
-    model <- lightgbm(
-      data    = ctx$train_set, 
-      param   = hyper_params, 
-      verbose = -100
-    )
-
-    print('Start test predictions...')
-    test_pred <- light_gbm_predict(
-      model,
-      features  = data.matrix(test_features), 
-      threshold = hyper_params$threshold
-    )
-    
-    positives_count <- sum(test_pred)
-    print(paste('Positives:', positives_count))
+    train_positives_count <- predict_on_train(ctx, hyper_params)
+    c(test_positives_count, test_pred) %<-% predict_on_test(ctx, hyper_params)
 
     save_model_result(
       result       = kaggle_df(test_set, test_pred),
-      model_name   = paste(model_name, '-positives_', positives_count, sep=''),
+      model_name   = paste(
+        model_name, 
+        '-train_positives_', train_positives_count, 
+        '-test_positives_', test_positives_count, 
+        sep=''
+      ),
       hyper_params = ctx$hyper_params,
       filename_fn  = build_gain_filename_fn(result$gain)
     )
+    
+    GLOBAL_max_gain <<- result$gain
+    
   } else {
     print(paste(
       'Gain does not improve! New Gain: ', 
@@ -113,7 +142,6 @@ on_after_cv_fn <- function(ctx) {
       sep=''
     ))
   }
-  
   result$gain
 }
 
@@ -147,18 +175,18 @@ optimization_manager <- CVOptimizationManager(
 )
 
 
-bo_iterations <- 250
+bo_iterations <- 500
 
 hyper_params  <- makeParamSet( 
-  makeNumericParam("learning_rate",     lower = 0.01,  upper = 0.1),
-  makeNumericParam("feature_fraction",  lower = 0.2,   upper = 1.0),
+  makeNumericParam("learning_rate",     lower = 0.01,  upper = 0.5),
+  makeNumericParam("feature_fraction",  lower = 0.1,   upper = 1.0),
   makeIntegerParam("min_data_in_leaf",  lower = 0,     upper = 8000),
-  makeIntegerParam("num_leaves",        lower = 16L,   upper = 1024L),
-  makeNumericParam("threshold",         lower = 0.020, upper = 0.055),
+  makeIntegerParam("num_leaves",        lower = 16L,   upper = 1048L),
+  makeNumericParam("threshold",         lower = 0.01,  upper = 0.08),
   makeNumericParam("min_gain_to_split", lower = 0.01,  upper = 100),
   makeNumericParam("lambda_l1",         lower = 0.0,   upper = 100),
   makeNumericParam("lambda_l2",         lower = 0.0,   upper = 100),
-  makeIntegerParam("max_depth",         lower = 2,     upper = 20),
+  makeIntegerParam("max_depth",         lower = 1,     upper = 30),
   makeIntegerParam("max_bin",           lower = 31,    upper = 255)
 )
 
@@ -171,20 +199,13 @@ objetive_fn <- makeSingleObjectiveFunction(
   has.simple.signature = FALSE  # Paso los parametros en una lista
 )
 
-bo_data_path <- paste('../../bo.', dataset_type, '.rdata', sep='')
+bo_data_path <- paste('../../bo.', model_name, '.rdata', sep='')
 
 # Se graba cada 600 segundos
-ctrl <- makeMBOControl(
-  save.on.disk.at.time = 600, 
-  save.file.path       = bo_data_path
-) 
+ctrl <- makeMBOControl(save.on.disk.at.time = 600,  save.file.path = bo_data_path) 
 
 # Cantidad de iteraciones
-ctrl <- setMBOControlTermination(
-  ctrl, 
-  iters = bo_iterations
-)
-
+ctrl <- setMBOControlTermination(ctrl, iters = bo_iterations)
 ctrl <- setMBOControlInfill(ctrl, crit = makeMBOInfillCritEI())
 
 # Establezco la función que busca el máximo

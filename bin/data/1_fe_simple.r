@@ -12,7 +12,7 @@ p_load(data.table)
 #
 #
 loadcsv <- function(path) {
-  as.data.frame(read.csv(file = path))
+  fread(file = path)
 }
 
 load_train_set <- function(type='original') {
