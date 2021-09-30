@@ -6,14 +6,22 @@ options(warn=-2)
 # ------------------------------------------------------------------------------
 library(pacman)
 p_load(data.table)
-setwd(this.path::this.dir())
-source('../../lib/import.R')
 #
-import('../src/common.R')
 # ------------------------------------------------------------------------------
 #
 #
 #
+loadcsv <- function(path) {
+  as.data.frame(read.csv(file = path))
+}
+
+load_train_set <- function(type='original') {
+  loadcsv(paste('../../dataset/', type , '/paquete_premium_202009.csv', sep=''))
+}
+load_test_set <- function(type='original') {
+  loadcsv(paste('../../dataset/', type, '/paquete_premium_202011.csv', sep=''))
+}
+
 enrich_dataset <- function(dataset, target_path) {
   original_columns <- colnames(dataset)
 
@@ -108,11 +116,11 @@ enrich_dataset <- function(dataset, target_path) {
 }
 #------------------------------------------------------------------------------
 
-# Lectura rápida del dataset usando fread de la librería data.table
+setwd(this.path::this.dir())
 train_set <- load_train_set()
 test_set  <- load_test_set()
 
 enrich_dataset(train_set, "../../dataset/enriched/paquete_premium_202009.csv")
 enrich_dataset(test_set, "../../dataset/enriched/paquete_premium_202011.csv")
 
-quit( save="no")
+# quit( save="no")

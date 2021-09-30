@@ -29,9 +29,11 @@ excluded_columns = c(
 # Functions
 # ------------------------------------------------------------------------------
 load_train_set <- function(type='original') {
+  setwd(this.path::this.dir())
   loadcsv(paste('../../dataset/', type , '/paquete_premium_202009.csv', sep=''))
 }
 load_test_set <- function(type='original') {
+  setwd(this.path::this.dir())
   loadcsv(paste('../../dataset/', type, '/paquete_premium_202011.csv', sep=''))
 }
 

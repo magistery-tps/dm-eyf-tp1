@@ -18,10 +18,12 @@ import('../src/common.R')
 # Load & preprocess dataset
 # -----------------------------------------------------------------------------
 # Load dev y test
-setwd(this.path::this.dir())
-raw_dev_set <- load_train_set()
-test_set    <- load_test_set()
+dataset_type <- 'enriched' # original'
+raw_dev_set <- load_train_set(type=dataset_type)
+test_set    <- load_test_set(type=dataset_type)
 dev_set     <- preprocessing(raw_dev_set, excludes = excluded_columns)
+
+colnames(dev_set)
 # -----------------------------------------------------------------------------
 #
 #
@@ -38,14 +40,16 @@ params = list(
   objective        = "binary",
   max_bin          = 15,
   min_data_in_leaf = 4000,
-  learning_rate    = 0.05
+  learning_rate    = 0.05,
+  metric           = 'auc',
+  first_metric_only = TRUE,
+  boost_from_average = TRUE,
+#  feature_pre_filter = FALSE
+  seed = 999983.0,
+  force_row_wise = TRUE
 )
 
 cv_result <- lgb.cv(
-  #  device          = "gpu",
-  #  gpu_platform_id = 0,
-  #  gpu_device_id   = 0,
-  #  gpu_use_dp      = TRUE,
   params          = params,
   nthread         = 24,
   nrounds         = 100,
@@ -82,6 +86,8 @@ test_pred <- light_gbm_predict(
   features  = data.matrix(test_features), 
   threshold = 0.031
 )
+
+sum(test_pred)
 
 # Save prediction...
 save_model_result(

@@ -1,0 +1,21 @@
+|
+  learning_rate: 0.0234313
+  feature_fraction: 0.5910091
+  min_data_in_leaf: 4533
+  num_leaves: 924
+  threshold: 0.0365715
+  min_gain_to_split: 0.0373706
+  lambda_l1: 0.0389804
+  lambda_l2: 34.4356496
+  max_depth: 4
+  max_bin: 240
+  objective: binary
+  metric: custom
+  first_metric_only: yes
+  boost_from_average: yes
+  feature_pre_filter: no
+  verbosity: -100.0
+  seed: 999983.0
+  num_iterations: 9999.0
+  force_row_wise: yes
+  early_stopping_rounds: 263

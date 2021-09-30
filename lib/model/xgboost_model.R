@@ -14,6 +14,11 @@ p_load(
 #
 #
 #
+xgb_create_features <- function(model, data) {
+  pred_with_leaf <- predict(model, data.matrix(data), predleaf = TRUE)
+  lapply(as.data.frame(pred_with_leaf), factor)
+}
+
 xgboost_predict <- function(model, features, threshold=.5, positive=1, negative=0) {
   model_predict(model, as.matrix(features), threshold, positive, negative)
 }
