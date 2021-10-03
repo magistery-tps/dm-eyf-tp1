@@ -1,9 +1,9 @@
-# Datamining en Economia y Finanzas - TP 1
+#  UBA - Maestria en Explotación de Datos y Descubrimiento de Conocimiento - Datamining en Economia y Finanzas - Churn Prediction
 
-* [Competencia Kaggle](https://www.kaggle.com/c/uba-dmeyf2021-primera/overview)
-* [Presentacion del problema](https://github.com/magistery-tps/dm-eyf-tp1/blob/feat/improve-metrics-and-new-model/tp1/doc/102_PresentaciondelProblema.pdf)
-* [Diccionario de datos](https://github.com/magistery-tps/dm-eyf-tp1/blob/feat/improve-metrics-and-new-model/tp1/doc/DiccionarioDatos.ods?raw=true)
-* [Repositorio de la materia](https://github.com/dmecoyfin/dmeyf)
+* [Kaggle Competition](https://www.kaggle.com/c/uba-dmeyf2021-primera/overview)
+* [Problem Description](https://github.com/magistery-tps/dm-eyf-tp1/blob/feat/improve-metrics-and-new-model/tp1/doc/102_PresentaciondelProblema.pdf)
+* [Dataset Description](https://github.com/magistery-tps/dm-eyf-tp1/blob/feat/improve-metrics-and-new-model/tp1/doc/DiccionarioDatos.ods?raw=true)
+* [DMEyF Repository](https://github.com/dmecoyfin/dmeyf)
 
 ## Getting Starter
 
